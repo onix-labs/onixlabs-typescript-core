@@ -1,0 +1,33 @@
+{
+  "name": "onixlabs-typescript-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp clean build",
+    "test": "gulp clean build && clear && node dist/test/_testrun.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onix-labs/onixlabs-typescript-core.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/onix-labs/onixlabs-typescript-core/issues"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "homepage": "https://github.com/onix-labs/onixlabs-typescript-core#readme",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-clean": "^0.4.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "merge-stream": "^2.0.0",
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
+  }
+}
