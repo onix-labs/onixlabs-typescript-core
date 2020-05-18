@@ -69,7 +69,7 @@ function formatArguments(testArgs: any[] = []): string {
     });
 }
 
-executive.onExecuted.addEventListener((_, result) => {
+executive.onExecuted.subscribe((_, result) => {
     console.log(buildString(builder => {
         const color: TextColor = getTextColor(result.status);
 
@@ -95,7 +95,7 @@ executive.onExecuted.addEventListener((_, result) => {
     }));
 });
 
-executive.onCompleted.addEventListener((_, result) => {
+executive.onCompleted.subscribe((_, result) => {
     console.log(buildString(builder => {
         const extent: string = result.totalDuration.format(new LongDurationFormatter(true));
         builder

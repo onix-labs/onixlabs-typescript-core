@@ -1,4 +1,4 @@
-import { Action, Action2, Comparer, Enum, Equatable, Event, EventDispatcher, Func2, InvalidOperationError, Optional, StringIndexed, Type, TypeInfo } from "./core";
+import { Action, Action2, Comparer, Enum, Equatable, Func2, InvalidOperationError, Optional, StringIndexed, Type, TypeInfo, Observable, NotifyDispatcher } from "./core";
 import { Duration } from "./date";
 
 export class AssertionError extends Error {
@@ -170,7 +170,7 @@ export class TestEntry {
     }
 }
 
-export class TestResult {
+export class TestExecutionResult {
     public constructor(
         public readonly target: object,
         public readonly property: string,
@@ -181,8 +181,8 @@ export class TestResult {
         public readonly testArgs?: any[]) {
     }
 
-    public static passed(testEntry: TestEntry, started: Date): TestResult {
-        return new TestResult(
+    public static passed(testEntry: TestEntry, started: Date): TestExecutionResult {
+        return new TestExecutionResult(
             testEntry.target,
             testEntry.property,
             testEntry.displayName,
@@ -191,8 +191,8 @@ export class TestResult {
         );
     }
 
-    public static failed(testEntry: TestEntry, started: Date, error: Error, testArgs?: any[]): TestResult {
-        return new TestResult(
+    public static failed(testEntry: TestEntry, started: Date, error: Error, testArgs?: any[]): TestExecutionResult {
+        return new TestExecutionResult(
             testEntry.target,
             testEntry.property,
             testEntry.displayName,
@@ -205,18 +205,18 @@ export class TestResult {
 }
 
 export class TestCompletionResult {
-    public constructor(public readonly results: TestResult[]) {
+    public constructor(public readonly results: TestExecutionResult[]) {
     }
 
-    public get passed(): TestResult[] {
+    public get passed(): TestExecutionResult[] {
         return this.results.filter(result => result.status.equals(TestStatus.PASSED));
     }
 
-    public get failedAssertion(): TestResult[] {
+    public get failedAssertion(): TestExecutionResult[] {
         return this.results.filter(result => result.status.equals(TestStatus.FAILED_ASSERTION));
     }
 
-    public get failedException(): TestResult[] {
+    public get failedException(): TestExecutionResult[] {
         return this.results.filter(result => result.status.equals(TestStatus.FAILED_EXCEPTION));
     }
 
@@ -240,11 +240,16 @@ export function display(name: string): Action2<object, string> {
 export class TestExecutive {
     private static instance: TestExecutive;
 
+    public readonly onExecuted: Observable<TestExecutive, TestExecutionResult>;
+    public readonly onCompleted: Observable<TestExecutive, TestCompletionResult>;
+    private readonly dispatcher: NotifyDispatcher<TestExecutive> = new NotifyDispatcher<TestExecutive>(this);
     private readonly entries: StringIndexed<TestEntry> = {};
-    private readonly results: TestResult[] = [];
-    private readonly dispatcher: EventDispatcher<TestExecutive> = new EventDispatcher();
-    public readonly onExecuted: Event<TestExecutive, TestResult> = new Event(this.dispatcher);
-    public readonly onCompleted: Event<TestExecutive, TestCompletionResult> = new Event(this.dispatcher);
+    private readonly results: TestExecutionResult[] = [];
+
+    public constructor() {
+        this.onExecuted = this.dispatcher.createObservable();
+        this.onCompleted = this.dispatcher.createObservable();
+    }
 
     public addTest(target: object, property: string, testArgs: any[] = []): void {
         const key: string = `${target.constructor.name}_${property}`;
@@ -266,21 +271,21 @@ export class TestExecutive {
         Object.values(this.entries).forEach(entry => {
             entry.testArgs.reverse().forEach(testArgs => {
                 const started: Date = new Date(Date.now());
-                let result: TestResult;
+                let result: TestExecutionResult;
 
                 try {
                     entry.execute(testArgs);
-                    result = TestResult.passed(entry, started);
+                    result = TestExecutionResult.passed(entry, started);
                 } catch (error) {
-                    result = TestResult.failed(entry, started, error, testArgs);
+                    result = TestExecutionResult.failed(entry, started, error, testArgs);
                 }
 
                 this.results.push(result);
-                this.dispatcher.dispatchEvent(this.onExecuted, this, result);
+                this.dispatcher.notify(this.onExecuted, result);
             });
         });
 
-        this.dispatcher.dispatchEvent(this.onCompleted, this, new TestCompletionResult(this.results));
+        this.dispatcher.notify(this.onCompleted, new TestCompletionResult(this.results));
     }
 
     public static getInstance(): TestExecutive {

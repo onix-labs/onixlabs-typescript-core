@@ -127,9 +127,9 @@ export type Action7<T1, T2, T3, T4, T5, T6, T7> = Func7<T1, T2, T3, T4, T5, T6, 
 export type Action8<T1, T2, T3, T4, T5, T6, T7, T8> = Func8<T1, T2, T3, T4, T5, T6, T7, T8, void>;
 
 /**
- * Represents a function which listens to events from an event source.
+ * Represents a function which observes events from an event source.
  */
-export type EventListener<S, D = void> = Action2<Readonly<S>, Readonly<D>>;
+export type Observer<S, D = unknown> = (source: Readonly<S>, data: Readonly<D>) => void;
 
 /**
  * Defines a mechanism for comparing object instances for sorting or ordering.
@@ -141,7 +141,7 @@ export interface Comparable<T = any> {
      * @param other The other object instance to compare with this instance.
      * @returns Returns a numeric value indicating the relative order of the objects being compared.
      */
-    compareTo(other: Readonly<T>): number;
+    compareTo(other: T): number;
 }
 
 /**
@@ -154,7 +154,7 @@ export interface Equatable<T = any> {
      * @param other The other object instance to compare wiht this instance.
      * @returns Returns true if this instance is equal to the other instance; otherwise, false.
      */
-    equals(other: Readonly<T>): boolean;
+    equals(other: T): boolean;
 }
 
 /**
@@ -180,7 +180,7 @@ export interface Formatter<T> {
      * @param value The value to format.
      * @returns Returns a string representation of the specified value.
      */
-    format(value: Readonly<T>): string;
+    format(value: T): string;
 }
 
 /**
@@ -332,6 +332,14 @@ export class Comparer {
         }
         return copy.length === 0;
     }
+
+    public static orderedSetEquals<T>(a: Set<T>, b: Set<T>, comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
+        return Comparer.orderedArrayEquals(Array.from(a.values()), Array.from(b.values()), comparer);
+    }
+
+    public static unorderedSetEquals<T>(a: Set<T>, b: Set<T>, comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
+        return Comparer.unorderedArrayEquals(Array.from(a.values()), Array.from(b.values()), comparer);
+    }
 }
 
 export abstract class Enum implements Equatable<Enum>, Comparable<Enum> {
@@ -342,7 +350,7 @@ export abstract class Enum implements Equatable<Enum>, Comparable<Enum> {
         return Comparer.compare(this, other, enumeration => enumeration.value);
     }
 
-    public equals(other: Readonly<Enum>): boolean {
+    public equals(other: Enum): boolean {
         return Comparer.equals(this, other)
             || this.name === other.name
             && this.value === other.value;
@@ -379,9 +387,9 @@ export class Flags<T extends Enum> extends Set<T> implements Equatable<Flags<T>>
         super(flags);
     }
 
-    public equals(other: Readonly<Flags<T>>): boolean {
+    public equals(other: Flags<T>): boolean {
         return Comparer.equals(this, other)
-            || Comparer.unorderedArrayEquals(this.toArray(), other.toArray());
+            || Comparer.unorderedSetEquals(this, other);
     }
 
     public toArray(): T[] {
@@ -446,7 +454,7 @@ export class TypeInfo<T> implements Equatable<TypeInfo<T>> {
         this.isCallable = TypeInfo.isCallable(value);
     }
 
-    public equals(other: Readonly<TypeInfo<T>>): boolean {
+    public equals(other: TypeInfo<T>): boolean {
         return Comparer.equals(this, other)
             || Comparer.equals(this.type, other.type);
     }
@@ -574,7 +582,7 @@ export class PropertyInfo<T, P> implements Equatable<PropertyInfo<T, P>> {
         }
     }
 
-    public equals(other: Readonly<PropertyInfo<T, P>>): boolean {
+    public equals(other: PropertyInfo<T, P>): boolean {
         throw new Error("Method not implemented.");
     }
 
@@ -596,7 +604,7 @@ export class Version implements Equatable<Version> {
         Object.freeze(this);
     }
 
-    public equals(other: Readonly<Version>): boolean {
+    public equals(other: Version): boolean {
         return Comparer.equals(this, other)
             || (Comparer.equals(this.toString(), other.toString()));
     }
@@ -611,55 +619,61 @@ export class Version implements Equatable<Version> {
     }
 }
 
-export class Event<S, D = void> {
-    private readonly eventListeners: EventListener<S, D>[] = [];
+export abstract class Observable<S, D = unknown> implements Equatable<Observable<S, D>> {
+    private readonly observers: Set<Observer<S, D>> = new Set();
 
-    public constructor(eventDispatcher: EventDispatcher<S>) {
-        eventDispatcher.onDispatchEvent(this, (sender: S, data: D) => {
-            this.eventListeners.forEach(eventListener => eventListener(sender, data));
-        });
+    public equals(other: Observable<S, D>): boolean {
+        return Comparer.equals(this, other)
+            || Comparer.unorderedSetEquals(this.observers, other.observers);
     }
 
-    public addEventListener(eventListener: EventListener<S, D>): void {
-        this.eventListeners.push(eventListener);
+    public subscribe(observer: Observer<S, D>): void {
+        this.observers.add(observer);
     }
 
-    public removeEventListener(eventListener: EventListener<S, D>): void {
-        const index: number = this.eventListeners.indexOf(eventListener);
-        if (index > -1) this.eventListeners.splice(index, 1);
+    public unsubscribe(observer: Observer<S, D>): void {
+        this.observers.delete(observer);
     }
 
-    public removeAllEventListeners(): void {
-        this.eventListeners.splice(1);
-    }
-}
-
-export class EventDispatcher<S> {
-    private readonly events: Map<Event<S, any>, Action2<S, any>> = new Map();
-
-    public onDispatchEvent<D>(event: Event<S, D>, action: Action2<S, D>): void {
-        this.events.set(event, action);
+    public unsubscribeAll(): void {
+        this.observers.clear();
     }
 
-    public dispatchEvent<D>(event: Event<S, D>, source: S, data: D): void {
-        const action: Optional<Action2<S, any>> = this.events.get(event);
-        if (action !== null && action !== undefined) {
-            action(source, data);
-        }
+    protected notify(source: S, data: D): void {
+        Array.from(this.observers.values()).forEach(observer => observer(source, data));
     }
 }
 
-export class Timer {
+export class NotifyDispatcher<S> {
+    private readonly observables: Map<Observable<S, any>, Action2<S, any>> = new Map();
+
+    public constructor(private readonly source: S) {
+    }
+
+    public createObservable<D>(): Observable<S, D> {
+        const observables: Map<Observable<S, any>, Action2<S, any>> = this.observables;
+        return new (class extends Observable<S, D> {
+            public constructor() {
+                super();
+                observables.set(this, this.notify);
+            }
+        })();
+    }
+
+    public notify<D>(observable: Observable<S, D>, data: D): void {
+        this.observables.get(observable)?.call(observable, this.source, data);
+    }
+}
+
+export class Timer extends Observable<Timer> {
     private isRunning: boolean = false;
-    private readonly dispatcher: EventDispatcher<Timer> = new EventDispatcher();
-    public readonly onTick: Event<Timer> = new Event(this.dispatcher);
 
     public start(interval: number = 1000): void {
         if (!this.isRunning) {
             this.isRunning = true;
             (async () => {
                 while (this.isRunning) {
-                    this.dispatcher.dispatchEvent(this.onTick, this, undefined);
+                    this.notify(this, undefined);
                     await new Promise((resolve: () => void): number => setTimeout(resolve, interval));
                 }
             })();
@@ -670,25 +684,23 @@ export class Timer {
         this.isRunning = false;
     }
 
-    public static startNew(interval: number, eventListener: EventListener<Timer>): Timer {
+    public static startNew(interval: number, observer: Observer<Timer>): Timer {
         const result: Timer = new Timer();
-        result.onTick.addEventListener(eventListener);
+        result.subscribe(observer);
         result.start(interval);
         return result;
     }
 }
 
-export class Delay {
+export class Delay extends Observable<Delay> {
     private isRunning: boolean = false;
-    private readonly dispatcher: EventDispatcher<Delay> = new EventDispatcher();
-    public readonly onTick: Event<Delay> = new Event(this.dispatcher);
 
     public start(timeout: number = 1000): void {
         if (!this.isRunning) {
             this.isRunning = true;
             (async () => {
                 await new Promise((resolve: () => void): number => setTimeout(resolve, timeout));
-                if (this.isRunning) this.dispatcher.dispatchEvent(this.onTick, this, undefined);
+                if (this.isRunning) this.notify(this, undefined);
             })();
         }
     }
@@ -697,9 +709,9 @@ export class Delay {
         this.isRunning = false;
     }
 
-    public static startNew(timeout: number, eventListener: EventListener<Delay>): Delay {
+    public static startNew(timeout: number, observer: Observer<Delay>): Delay {
         const result: Delay = new Delay();
-        result.onTick.addEventListener(eventListener);
+        result.subscribe(observer);
         result.start(timeout);
         return result;
     }
