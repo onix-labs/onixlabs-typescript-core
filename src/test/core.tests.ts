@@ -1,5 +1,4 @@
 import {
-    Comparer,
     Enum,
     Equatable,
     Flags,
@@ -10,10 +9,10 @@ import {
     NotImplementedError,
     NotSupportedError,
     OutOfRangeError,
-    PropertyBinding,
     Type,
     TypeInfo,
-    Version
+    Version,
+    Comparable
 } from "../main/core";
 import { Assert, display, test } from "../main/test";
 import { TextColor } from "../main/text";
@@ -34,107 +33,107 @@ export class CoreTests {
         Assert.isEqual(message, error.message);
     }
 
-    @display("Comparer.compare should produce the expected numeric order.")
+    @display("Comparable.compare should produce the expected numeric order.")
     @test({ value: 1 }, { value: 1 }, 0)
     @test({ value: 1 }, { value: 2 }, -1)
     @test({ value: 2 }, { value: 1 }, 1)
     @test({ value: 123 }, { value: 123 }, 0)
     @test({ value: 123 }, { value: 456 }, -1)
     @test({ value: 456 }, { value: 123 }, 1)
-    public comparerCompareShouldProduceExpectedNumericOrder(a: any, b: any, expected: number): void {
-        const actual: number = Comparer.compare(a, b, o => o.value);
+    public comparableCompareShouldProduceExpectedNumericOrder(a: any, b: any, expected: number): void {
+        const actual: number = Comparable.compare(a, b, o => o.value);
         Assert.isEqual(expected, actual);
     }
 
-    @display("Comparer.equals should return true when value references are equal.")
+    @display("Equatable.equals should return true when value references are equal.")
     @test({ key: "test", value: 123 })
     @test(123)
     @test(NaN)
     @test("abc")
     @test(true)
-    public comparerEqualsShouldReturnTrueWhenObjectReferencesAreEqual(a: any): void {
+    public equatableEqualsShouldReturnTrueWhenObjectReferencesAreEqual(a: any): void {
         const b: any = a;
-        const actual: boolean = Comparer.equals(a, b);
+        const actual: boolean = Equatable.equals(a, b);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.equals should return true when values are equal.")
+    @display("Equatable.equals should return true when values are equal.")
     @test(123, 123)
     @test("abc", "abc")
     @test(true, true)
     @test(NaN, NaN)
-    public compareEqualsShouldReturnTrueWhenValueReferencesAreNotEqual(a: any, b: any): void {
-        const actual: boolean = Comparer.equals(a, b);
+    public equatableEqualsShouldReturnTrueWhenValueReferencesAreNotEqual(a: any, b: any): void {
+        const actual: boolean = Equatable.equals(a, b);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.equatableEquals should return true when equatable values are equal.")
+    @display("Equatable.equatableEquals should return true when equatable values are equal.")
     @test(TextColor.BLACK, TextColor.BLACK)
     @test(Version.parse("1.2.3"), Version.parse("1.2.3"))
     @test(new TypeInfo(123), new TypeInfo(456))
-    public compareEquatableEqualsShouldReturnTrueWhenReferencesAreEqual(
+    public equatableEquatableEqualsShouldReturnTrueWhenReferencesAreEqual(
         a: Equatable<any>, b: Equatable<any>): void {
-        const actual: boolean = Comparer.equatableEquals(a, b);
+        const actual: boolean = Equatable.equatableEquals(a, b);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.equatableEquals should return false when equatable values are not equal.")
+    @display("Equatable.equatableEquals should return false when equatable values are not equal.")
     @test(TextColor.BLACK, TextColor.WHITE)
     @test(Version.parse("1.2.3"), Version.parse("3.2.1"))
     @test(new TypeInfo(123), new TypeInfo("abc"))
-    public compareEquatableEqualsShouldReturnFalseWhenReferencesAreNotEqual(
+    public equatableEquatableEqualsShouldReturnFalseWhenReferencesAreNotEqual(
         a: Equatable<any>, b: Equatable<any>): void {
-        const actual: boolean = Comparer.equatableEquals(a, b);
+        const actual: boolean = Equatable.equatableEquals(a, b);
         Assert.isFalse(actual);
     }
 
-    @display("Comparer.orderedArrayEquals should return true when the arrays are identical.")
-    @test([1, 2, 3], [1, 2, 3], Comparer.equals)
-    @test(["a", "b", "c"], ["a", "b", "c"], Comparer.equals)
-    @test([/[a-z]/, /[A-Z]/], [/[a-z]/, /[A-Z]/], (a: any, b: any) => a.toString() === b.toString())
-    public comparerOrderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
+    @display("Equatable.orderedArrayEquals should return true when the arrays are identical.")
+    @test([1, 2, 3], [1, 2, 3], Equatable.equals)
+    @test(["a", "b", "c"], ["a", "b", "c"], Equatable.equals)
+    @test([/[a-z]/, /[A-Z]/], [/[a-z]/, /[A-Z]/], Equatable.equals)
+    public equatableOrderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
         a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Comparer.orderedArrayEquals(a, b, comparer);
+        const actual: boolean = Equatable.orderedArrayEquals(a, b, comparer);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.orderedArrayEquals should return false when the arrays are not identical.")
-    @test([1, 2, 3], [3, 2, 1], Comparer.equals)
-    @test(["a", "b", "c"], ["c", "b", "a"], Comparer.equals)
+    @display("Equatable.orderedArrayEquals should return false when the arrays are not identical.")
+    @test([1, 2, 3], [3, 2, 1], Equatable.equals)
+    @test(["a", "b", "c"], ["c", "b", "a"], Equatable.equals)
     @test([/[a-z]/, /[A-Z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public comparerOrderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
+    public equatableOrderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
         a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Comparer.orderedArrayEquals(a, b, comparer);
+        const actual: boolean = Equatable.orderedArrayEquals(a, b, comparer);
         Assert.isFalse(actual);
     }
 
-    @display("Comparer.unorderedArrayEquals should return true when the arrays are identical.")
-    @test([1, 2, 3], [1, 2, 3], Comparer.equals)
-    @test(["a", "b", "c"], ["a", "b", "c"], Comparer.equals)
+    @display("Equatable.unorderedArrayEquals should return true when the arrays are identical.")
+    @test([1, 2, 3], [1, 2, 3], Equatable.equals)
+    @test(["a", "b", "c"], ["a", "b", "c"], Equatable.equals)
     @test([/[a-z]/, /[A-Z]/], [/[a-z]/, /[A-Z]/], (a: any, b: any) => a.toString() === b.toString())
-    public comparerUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
+    public equatableUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
         a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Comparer.unorderedArrayEquals(a, b, comparer);
+        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.unorderedArrayEquals should return true when the arrays are identical but unordered.")
-    @test([1, 2, 3, 1], [3, 2, 1, 1], Comparer.equals)
-    @test(["a", "b", "c", "a"], ["c", "b", "a", "a"], Comparer.equals)
+    @display("Equatable.unorderedArrayEquals should return true when the arrays are identical but unordered.")
+    @test([1, 2, 3, 1], [3, 2, 1, 1], Equatable.equals)
+    @test(["a", "b", "c", "a"], ["c", "b", "a", "a"], Equatable.equals)
     @test([/[a-z]/, /[A-Z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public comparerUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdenticalButUnordered(
+    public equatableUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdenticalButUnordered(
         a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Comparer.unorderedArrayEquals(a, b, comparer);
+        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
         Assert.isTrue(actual);
     }
 
-    @display("Comparer.unorderedArrayEquals should return false when the arrays are not identical.")
-    @test([1, 2, 3], [3, 2, 1, 1], Comparer.equals)
-    @test(["a", "b", "c"], ["c", "b", "a", "a"], Comparer.equals)
+    @display("Equatable.unorderedArrayEquals should return false when the arrays are not identical.")
+    @test([1, 2, 3], [3, 2, 1, 1], Equatable.equals)
+    @test(["a", "b", "c"], ["c", "b", "a", "a"], Equatable.equals)
     @test([/[a-z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public comparerUnorderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
+    public equatableUnorderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
         a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Comparer.unorderedArrayEquals(a, b, comparer);
+        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
         Assert.isFalse(actual);
     }
 
@@ -181,7 +180,7 @@ export class CoreTests {
             TextColor.LIGHT_MAGENTA, TextColor.LIGHT_RED, TextColor.LIGHT_YELLOW, TextColor.WHITE
         ];
 
-        Assert.isUnorderedArrayEquals(expected, actual, Comparer.equatableEquals);
+        Assert.isUnorderedArrayEquals(expected, actual, Equatable.equatableEquals);
     }
 
     @display("Enum.fromName should return an enum instance from its name.")
@@ -205,7 +204,7 @@ export class CoreTests {
     public flagsShouldConstructAFlagSet(): void {
         const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE];
         const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Comparer.equatableEquals);
+        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
     }
 
     @display("Flags.addFlag should add an enum to the flag set.")
@@ -214,7 +213,7 @@ export class CoreTests {
         const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE, TextColor.DARK_BLUE];
         const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE);
         actual.add(TextColor.DARK_BLUE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Comparer.equatableEquals);
+        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
     }
 
     @display("Flags.removeFlag should remove an enum from the flag set.")
@@ -223,7 +222,7 @@ export class CoreTests {
         const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE];
         const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE, TextColor.DARK_BLUE);
         actual.delete(TextColor.DARK_BLUE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Comparer.equatableEquals);
+        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
     }
 
     @display("Flags.toString should correctly format a flag set.")

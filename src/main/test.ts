@@ -1,4 +1,4 @@
-import { Action, Action2, Comparer, Enum, Equatable, Func2, InvalidOperationError, Optional, StringIndexed, Type, TypeInfo, Observable, NotifyDispatcher } from "./core";
+import { Action, Action2, Enum, Equatable, Func2, InvalidOperationError, Optional, Keyed, Type, TypeInfo, Observable, NotifyDispatcher, Delay } from "./core";
 import { Duration } from "./date";
 
 export class AssertionError extends Error {
@@ -15,49 +15,49 @@ export class Assert {
     }
 
     public static isEqual(expected: any, actual: any): void {
-        if (!Comparer.equals(expected, actual)) {
+        if (!Equatable.equals(expected, actual)) {
             throw new AssertionError(`Assert.isEqual failed. '${expected}' and '${actual}' are not equal.`);
         }
     }
 
     public static isNotEqual(expected: any, actual: any): void {
-        if (Comparer.equals(expected, actual)) {
+        if (Equatable.equals(expected, actual)) {
             throw new AssertionError(`Assert.isNotEqual failed. '${expected}' and '${actual}' are equal.`);
         }
     }
 
     public static isEquatableEqual<T extends Equatable<T>>(expected: T, actual: T): void {
-        if (!Comparer.equatableEquals(expected, actual)) {
+        if (!Equatable.equatableEquals(expected, actual)) {
             throw new AssertionError(`Assert.isEquatableEqual failed. '${expected}' and '${actual}' are not equal.`);
         }
     }
 
     public static isNotEquatableEqual<T extends Equatable<T>>(expected: T, actual: T): void {
-        if (Comparer.equatableEquals(expected, actual)) {
+        if (Equatable.equatableEquals(expected, actual)) {
             throw new AssertionError(`Assert.isNotEquatableEqual failed. '${expected}' and '${actual}' are equal.`);
         }
     }
 
-    public static isOrderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Comparer.equals): void {
-        if (!Comparer.orderedArrayEquals(expected, actual, comparer)) {
+    public static isOrderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Equatable.equals): void {
+        if (!Equatable.orderedArrayEquals(expected, actual, comparer)) {
             throw new AssertionError(`Assert.isOrderedArrayEquals failed. '${expected}' and '${actual}' are not equal.`);
         }
     }
 
-    public static isNotOrderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Comparer.equals): void {
-        if (Comparer.orderedArrayEquals(expected, actual, comparer)) {
+    public static isNotOrderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Equatable.equals): void {
+        if (Equatable.orderedArrayEquals(expected, actual, comparer)) {
             throw new AssertionError(`Assert.isNotOrderedArrayEquals failed. '${expected}' and '${actual}' are equal.`);
         }
     }
 
-    public static isUnorderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Comparer.equals): void {
-        if (!Comparer.unorderedArrayEquals(expected, actual, comparer)) {
+    public static isUnorderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Equatable.equals): void {
+        if (!Equatable.unorderedArrayEquals(expected, actual, comparer)) {
             throw new AssertionError(`Assert.isUnorderedArrayEquals failed. '${expected}' and '${actual}' are not equal.`);
         }
     }
 
-    public static isNotUnorderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Comparer.equals): void {
-        if (Comparer.unorderedArrayEquals(expected, actual, comparer)) {
+    public static isNotUnorderedArrayEquals<T>(expected: T[], actual: T[], comparer: Func2<T, T, boolean> = Equatable.equals): void {
+        if (Equatable.unorderedArrayEquals(expected, actual, comparer)) {
             throw new AssertionError(`Assert.isNotUnorderedArrayEquals failed. '${expected}' and '${actual}' are equal.`);
         }
     }
@@ -165,7 +165,7 @@ export class TestEntry {
     }
 
     public execute(testArgs: any[] = []): void {
-        const instance: StringIndexed<Action> = Object.create(this.target);
+        const instance: Keyed<Action> = Object.create(this.target);
         instance[this.property].apply(instance, testArgs);
     }
 }
@@ -243,7 +243,7 @@ export class TestExecutive {
     public readonly onExecuted: Observable<TestExecutive, TestExecutionResult>;
     public readonly onCompleted: Observable<TestExecutive, TestCompletionResult>;
     private readonly dispatcher: NotifyDispatcher<TestExecutive> = new NotifyDispatcher<TestExecutive>(this);
-    private readonly entries: StringIndexed<TestEntry> = {};
+    private readonly entries: Keyed<TestEntry> = {};
     private readonly results: TestExecutionResult[] = [];
 
     public constructor() {

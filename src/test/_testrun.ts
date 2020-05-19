@@ -3,8 +3,9 @@ import { LongDurationFormatter } from "../main/date";
 import { TestExecutive, TestStatus } from "../main/test";
 import { buildString, TextColor } from "../main/text";
 import { CoreTests } from "./core.tests";
+import { DataTests } from "./data.tests";
 
-[CoreTests]
+[CoreTests, DataTests]
 
 const executive: TestExecutive = TestExecutive.getInstance();
 let lastErrorFailed: boolean = false;

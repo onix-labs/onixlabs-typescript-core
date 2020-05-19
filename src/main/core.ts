@@ -11,15 +11,15 @@ export type Nullable<T> = T | null;
 /**
  * Represents a type that can be indexed using a number.
  */
-export type NumberIndexed<T = any> = {
+export type Indexed<T = any> = {
     [index: number]: T;
 };
 
 /**
- * Represents a type that can be indexed using a string.
+ * Represents a type that can be keyed using a string.
  */
-export type StringIndexed<T = any> = {
-    [index: string]: T;
+export type Keyed<T = any> = {
+    [key: string]: T;
 };
 
 /**
@@ -134,27 +134,106 @@ export type Observer<S, D = unknown> = (source: Readonly<S>, data: Readonly<D>) 
 /**
  * Defines a mechanism for comparing object instances for sorting or ordering.
  */
-export interface Comparable<T = any> {
+export abstract class Comparable<T> {
+
+    private constructor() {
+    }
 
     /**
      * Compares the current object instance with another object instance.
      * @param other The other object instance to compare with this instance.
      * @returns Returns a numeric value indicating the relative order of the objects being compared.
      */
-    compareTo(other: T): number;
+    public abstract compareTo(other: T): number;
+
+    public static compare<T>(left: T, right: T, selector: Func1<T, number>): number {
+        const lval: number = selector(left);
+        const rval: number = selector(right);
+        return lval === rval ? 0 : lval > rval ? 1 : -1;
+    }
+
+    public static comparableCompare<T extends Comparable<T>>(left: T, right: T): number {
+        return left.compareTo(right);
+    }
 }
 
 /**
  * Defines a mechanism for determining equality of object instances.
  */
-export interface Equatable<T = any> {
+export abstract class Equatable<T> {
 
     /**
      * Determines whether this object instance is equal to another object instance.
      * @param other The other object instance to compare wiht this instance.
      * @returns Returns true if this instance is equal to the other instance; otherwise, false.
      */
-    equals(other: T): boolean;
+    public abstract equals(other: T): boolean;
+
+    public static equals(a: any, b: any): boolean {
+        if (a instanceof Map && b instanceof Map) {
+            return Equatable.mapEquals(a, b);
+        } else if (a instanceof Set && b instanceof Set) {
+            return Equatable.setEquals(a, b);
+        } else if (a instanceof Object && b instanceof Object) {
+            return Equatable.objectEquals(a, b);
+        }
+        return Equatable.valueEquals(a, b);
+    }
+
+    public static equatableEquals<T extends Equatable<T>>(a: T, b: T): boolean {
+        return a.equals(b);
+    }
+
+    public static valueEquals(a: any, b: any): boolean {
+        return !!Object.is ? Object.is(a, b) : a === b ? a !== 0 || 1 / a === 1 / b : a !== a && b !== b;
+    }
+
+    public static objectEquals(a: any, b: any): boolean {
+        const keys: Func1<object, string[]> = Object.getOwnPropertyNames;
+        const symbols: Func1<object, symbol[]> = Object.getOwnPropertySymbols;
+        return Equatable.valueEquals(a, b)
+            || typeof a === "object"
+            && typeof b === "object"
+            && keys(a).length === keys(b).length
+            && symbols(a).length === symbols(b).length
+            && keys(a).every(key => Equatable.equals(a[key], b[key]))
+            && symbols(a).every(symbol => Equatable.equals(a[symbol], b[symbol]));
+    }
+
+    public static mapEquals<K, V>(a: Map<K, V>, b: Map<K, V>): boolean {
+        return a.size === b.size
+            && Array.from(a.keys()).every(key => b.has(key) && Equatable.equals(a.get(key), b.get(key)));
+    }
+
+    public static setEquals<T>(a: Set<T>, b: Set<T>): boolean {
+        return a.size === b.size && Array.from(a.values()).every(value => b.has(value));
+    }
+
+    public static orderedArrayEquals<T>(a: T[], b: T[], comparer: Func2<T, T, boolean> = Equatable.equals): boolean {
+        if (a === b) return true;
+        if (a === null || b === null) return false;
+        if (a.length !== b.length) return false;
+        for (let index: number = 0; index < a.length; index++) {
+            if (!comparer(a[index], b[index])) return false;
+        }
+        return true;
+    }
+
+    public static unorderedArrayEquals<T>(a: T[], b: T[], comparer: Func2<T, T, boolean> = Equatable.equals): boolean {
+        if (a === b) return true;
+        if (a === null || b === null) return false;
+        if (a.length !== b.length) return false;
+        const copy: T[] = b.slice();
+        for (const element of a) {
+            for (let index: number = 0; index < copy.length; index++) {
+                if (comparer(element, copy[index])) {
+                    copy.splice(index, 1);
+                    break;
+                }
+            }
+        }
+        return copy.length === 0;
+    }
 }
 
 /**
@@ -279,81 +358,16 @@ export class NotSupportedError extends Error {
     }
 }
 
-export class Comparer {
-    private constructor() {
-    }
-
-    public static compare<T>(left: T, right: T, selector: Func1<T, number>): number {
-        const lValue: number = selector(left);
-        const rValue: number = selector(right);
-        return lValue === rValue ? 0 : lValue > rValue ? 1 : -1;
-    }
-
-    public static comparableCompare<T extends Comparable<T>>(left: T, right: T): number {
-        return left.compareTo(right);
-    }
-
-    public static equals(a: any, b: any): boolean {
-        if (TypeInfo.isNullOrUndefined(Object["is"])) {
-            return a === b
-                ? a !== 0 || 1 / a === 1 / b
-                : a !== a && b !== b;
-        }
-
-        return Object.is(a, b);
-    }
-
-    public static equatableEquals<T extends Equatable<T>>(a: T, b: T): boolean {
-        return a.equals(b);
-    }
-
-    public static orderedArrayEquals<T>(a: T[], b: T[], comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
-        if (a === b) return true;
-        if (a === null || b === null) return false;
-        if (a.length !== b.length) return false;
-        for (let i: number = 0; i < a.length; i++) {
-            if (!comparer(a[i], b[i])) return false;
-        }
-        return true;
-    }
-
-    public static unorderedArrayEquals<T>(a: T[], b: T[], comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
-        if (a === b) return true;
-        if (a === null || b === null) return false;
-        if (a.length !== b.length) return false;
-        const copy: T[] = b.slice();
-        for (const element of a) {
-            for (let j: number = 0; j < copy.length; j++) {
-                if (comparer(element, copy[j])) {
-                    copy.splice(j, 1);
-                    break;
-                }
-            }
-        }
-        return copy.length === 0;
-    }
-
-    public static orderedSetEquals<T>(a: Set<T>, b: Set<T>, comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
-        return Comparer.orderedArrayEquals(Array.from(a.values()), Array.from(b.values()), comparer);
-    }
-
-    public static unorderedSetEquals<T>(a: Set<T>, b: Set<T>, comparer: Func2<T, T, boolean> = Comparer.equals): boolean {
-        return Comparer.unorderedArrayEquals(Array.from(a.values()), Array.from(b.values()), comparer);
-    }
-}
-
 export abstract class Enum implements Equatable<Enum>, Comparable<Enum> {
     protected constructor(public readonly value: number, public readonly name: string) {
     }
 
     public compareTo(other: Enum): number {
-        return Comparer.compare(this, other, enumeration => enumeration.value);
+        return Comparable.compare(this, other, enumeration => enumeration.value);
     }
 
     public equals(other: Enum): boolean {
-        return Comparer.equals(this, other)
-            || this.name === other.name
-            && this.value === other.value;
+        return Equatable.equals(this, other);
     }
 
     public toString(): string {
@@ -361,15 +375,15 @@ export abstract class Enum implements Equatable<Enum>, Comparable<Enum> {
     }
 
     public static getAll<T extends Enum>(): T[] {
-        const enumeration: any = this;
+        const enumeration: Keyed = this;
         return Object
-            .getOwnPropertyNames(enumeration)
-            .filter(name => TypeInfo.isInstanceOfType(enumeration[name], enumeration))
+            .keys(enumeration)
+            .filter(name => enumeration[name] instanceof this)
             .map(name => enumeration[name]);
     }
 
     public static fromName<T extends Enum>(name: string): T {
-        const result: T = this.getAll().filter(entry => entry.name === name)[0] as T;
+        const result: T = this.getAll().filter(enumeration => enumeration.name === name)[0] as T;
         if (!TypeInfo.isNullOrUndefined(result)) return result;
         throw new InvalidArgumentError(`Enum with name '${name}' not found in ${this.name}`);
     }
@@ -388,8 +402,7 @@ export class Flags<T extends Enum> extends Set<T> implements Equatable<Flags<T>>
     }
 
     public equals(other: Flags<T>): boolean {
-        return Comparer.equals(this, other)
-            || Comparer.unorderedSetEquals(this, other);
+        return Equatable.equals(this, other);
     }
 
     public toArray(): T[] {
@@ -399,7 +412,7 @@ export class Flags<T extends Enum> extends Set<T> implements Equatable<Flags<T>>
     public toString(): string {
         return this
             .toArray()
-            .sort(Comparer.comparableCompare)
+            .sort(Comparable.comparableCompare)
             .join(", ");
     }
 }
@@ -455,8 +468,8 @@ export class TypeInfo<T> implements Equatable<TypeInfo<T>> {
     }
 
     public equals(other: TypeInfo<T>): boolean {
-        return Comparer.equals(this, other)
-            || Comparer.equals(this.type, other.type);
+        return Equatable.equals(this, other)
+            || Equatable.equals(this.type, other.type);
     }
 
     public getProperties(bindings: Flags<PropertyBinding>): PropertyInfo<T, any>[] {
@@ -497,7 +510,7 @@ export class TypeInfo<T> implements Equatable<TypeInfo<T>> {
     }
 
     private getPropertiesFromMap(
-        target: StringIndexed<any>,
+        target: Keyed<any>,
         properties: string[],
         bindings: Flags<PropertyBinding>): PropertyInfo<T, any>[] {
         const result: PropertyInfo<T, any>[] = [];
@@ -605,8 +618,7 @@ export class Version implements Equatable<Version> {
     }
 
     public equals(other: Version): boolean {
-        return Comparer.equals(this, other)
-            || (Comparer.equals(this.toString(), other.toString()));
+        return Equatable.equals(this, other);
     }
 
     public toString(): string {
@@ -623,8 +635,7 @@ export abstract class Observable<S, D = unknown> implements Equatable<Observable
     private readonly observers: Set<Observer<S, D>> = new Set();
 
     public equals(other: Observable<S, D>): boolean {
-        return Comparer.equals(this, other)
-            || Comparer.unorderedSetEquals(this.observers, other.observers);
+        return Equatable.equals(this, other);
     }
 
     public subscribe(observer: Observer<S, D>): void {

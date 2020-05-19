@@ -1,4 +1,4 @@
-import { Comparable, Comparer, Enum, Equatable, Formattable, Formatter, StringIndexed } from "./core";
+import { Comparable, Enum, Equatable, Formattable, Formatter, Keyed } from "./core";
 
 export class Duration implements Comparable<Duration>, Equatable<Duration>, Formattable<Duration> {
     public readonly weeks: number = 0;
@@ -42,7 +42,7 @@ export class Duration implements Comparable<Duration>, Equatable<Duration>, Form
     }
 
     public compareTo(other: Duration): number {
-        return Comparer.compare(this, other, duration => duration.totalMilliseconds);
+        return Comparable.compare(this, other, duration => duration.totalMilliseconds);
     }
 
     public equals(other: Duration): boolean {
@@ -89,7 +89,7 @@ export class LongDurationFormatter implements Formatter<Duration> {
     public constructor(private readonly truncateEmptyEntries: boolean = false) { }
 
     public format(value: Duration): string {
-        const entries: StringIndexed<number> = {
+        const entries: Keyed<number> = {
             weeks: value.weeks,
             days: value.days,
             hours: value.hours,

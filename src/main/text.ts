@@ -1,4 +1,4 @@
-import { Action1, Comparer, Enum, Equatable, NotImplementedError } from "./core";
+import { Action1, Enum, Equatable, NotImplementedError } from "./core";
 
 export class StringBuilder implements Equatable<StringBuilder> {
     public static get EMPTY_STRING(): string { return ""; }
@@ -44,8 +44,7 @@ export class StringBuilder implements Equatable<StringBuilder> {
     }
 
     public equals(other: StringBuilder): boolean {
-        return Comparer.equals(this, other)
-            || Comparer.equals(this.items, other.items);
+        return Equatable.equals(this, other);
     }
 
     public toString(): string {
