@@ -9,7 +9,10 @@
             false
         ],
         "member-access": [
-            true
+            true,
+            "check-accessor",
+            "check-constructor",
+            "check-parameter-property"
         ],
         "no-bitwise": [
             false
