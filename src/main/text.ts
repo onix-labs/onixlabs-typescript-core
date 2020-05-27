@@ -1,4 +1,4 @@
-import { Action1, Enum, Equatable, NotImplementedError } from "./core";
+import { Equatable, Action1, Enum } from "./core";
 
 export class StringBuilder implements Equatable<StringBuilder> {
     public static get EMPTY_STRING(): string { return ""; }
@@ -17,6 +17,7 @@ export class StringBuilder implements Equatable<StringBuilder> {
     public static get PARAGRAPH_SEPARATOR(): string { return "\u2029"; }
     public static get BYTE_ORDER_MARK(): string { return "\uFEFF"; }
     public static get CRLF(): string { return "\u000D\u000A"; }
+    public static get RESET_COLOR(): string { return "\x1b[0m"; }
 
     public constructor(private readonly items: string[] = []) {
     }
@@ -33,8 +34,12 @@ export class StringBuilder implements Equatable<StringBuilder> {
     }
 
     public appendColor(item: any, foreColor: TextColor, backColor?: TextColor): this {
-        this.append(foreColor.toForeColor(), backColor?.toBackColor() ?? StringBuilder.EMPTY_STRING, item, "\x1b[0m");
-        return this;
+        return this.append(
+            foreColor.toForeColor(),
+            backColor?.toBackColor() ?? StringBuilder.EMPTY_STRING,
+            item,
+            StringBuilder.RESET_COLOR
+        );
     }
 
     public appendColorLine(item: any, foreColor: TextColor, backColor?: TextColor): this {

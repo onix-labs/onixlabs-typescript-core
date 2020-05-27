@@ -1,8 +1,8 @@
-import { Func1, Type, TypeInfo } from "../main/core";
-import { LongDurationFormatter } from "../main/date";
-import { TestExecutive, TestStatus } from "../main/test";
-import { buildString, TextColor } from "../main/text";
 import { CoreTests } from "./core.tests";
+import { TestExecutive, TestStatus } from "../main/test";
+import { TextColor, buildString } from "../main/text";
+import { Constructor, Type, Func1 } from "../main/core";
+import { LongDurationFormatter } from "../main/date";
 import { DataTests } from "./data.tests";
 
 [CoreTests, DataTests]
@@ -19,65 +19,67 @@ function getTextColor(status: TestStatus): TextColor {
     return TextColor.DARK_GRAY;
 }
 
-function getArgumentColor(arg: any): TextColor {
-    const map: Map<Type<any>, TextColor> = new Map();
-    let result: TextColor;
+function getFormattedArguments(args: any[]): string {
+    function color(arg: any): TextColor {
+        const map: Map<Constructor, TextColor> = new Map();
+        let result: TextColor;
 
-    map.set(Array, TextColor.DARK_YELLOW);
-    map.set(Function, TextColor.DARK_CYAN);
-    map.set(String, TextColor.DARK_RED);
-    map.set(Number, TextColor.DARK_GREEN);
-    map.set(Boolean, TextColor.DARK_BLUE);
-    map.set(RegExp, TextColor.DARK_MAGENTA);
+        map.set(Array, TextColor.DARK_YELLOW);
+        map.set(Function, TextColor.DARK_CYAN);
+        map.set(String, TextColor.DARK_RED);
+        map.set(Number, TextColor.DARK_GREEN);
+        map.set(Boolean, TextColor.DARK_BLUE);
+        map.set(RegExp, TextColor.DARK_MAGENTA);
 
 
-    try {
-        result = map.get(new TypeInfo(arg).type) ?? TextColor.DARK_GRAY;
-    } catch {
-        result = TextColor.DARK_GRAY;
+        try {
+            result = map.get(Type.from(arg).getConstructor()) ?? TextColor.DARK_GRAY;
+        } catch {
+            result = TextColor.DARK_GRAY;
+        }
+
+        return result;
     }
 
-    return result;
-}
+    function format(arg: any): string {
+        const map: Map<Constructor, Func1<any, string>> = new Map();
+        let result: string;
 
-function getArgumentFormat(arg: any): string {
-    const map: Map<Type<any>, Func1<any, string>> = new Map();
-    let result: string;
+        map.set(Function, a => a.name || "(anonymous)");
+        map.set(String, a => `"${a}"`);
+        map.set(Array, a => `[${a}]`);
 
-    map.set(Function, a => a.name || "(anonymous)");
-    map.set(String, a => `"${a}"`);
-    map.set(Array, a => `[${a}]`);
+        try {
+            result = (map.get(Type.from(arg).getConstructor()) ?? ((a: any) => a.toString()))(arg);
+        } catch {
+            result = ((a: any) => a?.toString() ?? "undefined")(arg);
+        }
 
-    try {
-        result = (map.get(new TypeInfo(arg).type) ?? ((a: any) => a.toString()))(arg);
-    } catch {
-        result = ((a: any) => a?.toString() ?? "undefined")(arg);
+        return result;
     }
 
-    return result;
+    return args.map(arg => buildString(it => it.appendColor(format(arg), color(arg)))).join(", ");
 }
 
-function formatArguments(testArgs: any[] = []): string {
-    const coloredArgs: string = testArgs.map(arg => buildString(builder => {
-        builder.appendColor(getArgumentFormat(arg), getArgumentColor(arg));
-    })).join(", ");
-
+function formatArguments(args: any[] = []): string {
     return buildString(builder => {
         builder
-            .appendColor("[", TextColor.LIGHT_GRAY)
-            .append(coloredArgs)
-            .appendColor("]", TextColor.LIGHT_GRAY);
+            .appendColor("[", TextColor.DARK_GRAY)
+            .append(getFormattedArguments(args))
+            .appendColor("]", TextColor.DARK_GRAY);
     });
 }
 
-executive.onExecuted.subscribe((_, result) => {
+executive.onExecuted.subscribe(result => {
     console.log(buildString(builder => {
         const color: TextColor = getTextColor(result.status);
 
         if (result.status === TestStatus.PASSED) {
             builder
                 .appendColor("PASSED : ", color)
-                .append(result.displayName, " (", result.duration, ")");
+                .appendColor(`[${result.target.constructor.name}]`, TextColor.LIGHT_GRAY)
+                .append(" - ", result.displayName)
+                .appendColor(` (${result.duration})`, TextColor.LIGHT_BLUE);
 
             lastErrorFailed = false;
         }
@@ -87,16 +89,19 @@ executive.onExecuted.subscribe((_, result) => {
 
             builder
                 .appendColor("FAILED : ", color)
-                .appendLine(result.displayName, " (", result.duration, ")")
+                .appendColor(`[${result.target.constructor.name}]`, TextColor.LIGHT_GRAY)
+                .append(" - ", result.displayName)
+                .appendColorLine(` (${result.duration})`, TextColor.LIGHT_BLUE)
                 .appendColorLine(`REASON : ${result.error?.message}`, color)
-                .appendColorLine(`ARGS   : ${formatArguments(result.testArgs)}`, color);
+                .appendColorLine(`STACK  : ${result.error?.stack}`, color)
+                .appendColorLine(`ARGS   : ${formatArguments(result.args)}`, color);
 
             lastErrorFailed = true;
         }
     }));
 });
 
-executive.onCompleted.subscribe((_, result) => {
+executive.onCompleted.subscribe(result => {
     console.log(buildString(builder => {
         const extent: string = result.totalDuration.format(new LongDurationFormatter(true));
         builder

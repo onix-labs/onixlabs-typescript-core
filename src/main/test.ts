@@ -1,5 +1,18 @@
-import { Action, Action2, Enum, Equatable, Func2, InvalidOperationError, Optional, Keyed, Type, TypeInfo, Observable, NotifyDispatcher, Delay } from "./core";
 import { Duration } from "./date";
+import {
+    Optional,
+    Equatable,
+    Func2,
+    Type,
+    Constructor,
+    Enum,
+    Mapped,
+    Action,
+    Action2,
+    Observable,
+    NotifyDispatcher,
+    InvalidOperationError
+} from "./core";
 
 export class AssertionError extends Error {
     public constructor(message: Optional<string> = "Assertion failed.") {
@@ -63,37 +76,37 @@ export class Assert {
     }
 
     public static isNull(actual: any): void {
-        if (!TypeInfo.isNull(actual)) {
+        if (!Type.isNull(actual)) {
             throw new AssertionError(`Assert.isNull failed. The value is not null.`);
         }
     }
 
     public static isNotNull(actual: any): void {
-        if (TypeInfo.isNull(actual)) {
+        if (Type.isNull(actual)) {
             throw new AssertionError(`Assert.isNotNull failed. The value is null.`);
         }
     }
 
     public static isUndefined(actual: any): void {
-        if (!TypeInfo.isUndefined(actual)) {
+        if (!Type.isUndefined(actual)) {
             throw new AssertionError(`Assert.isUndefined failed. The value is not undefined.`);
         }
     }
 
     public static isNotUndefined(actual: any): void {
-        if (TypeInfo.isUndefined(actual)) {
+        if (Type.isUndefined(actual)) {
             throw new AssertionError(`Assert.isNotUndefined failed. The value is undefined.`);
         }
     }
 
     public static isNullOrUndefined(actual: any): void {
-        if (!TypeInfo.isNullOrUndefined(actual)) {
+        if (!Type.isNullOrUndefined(actual)) {
             throw new AssertionError(`Assert.isNullOrUndefined failed. The value is not null or undefined.`);
         }
     }
 
     public static isNotNullOrUndefined(actual: any): void {
-        if (TypeInfo.isNullOrUndefined(actual)) {
+        if (Type.isNullOrUndefined(actual)) {
             throw new AssertionError(`Assert.isNotNullOrUndefined failed. The value is null or undefined.`);
         }
     }
@@ -110,31 +123,31 @@ export class Assert {
         }
     }
 
-    public static isLiteralOfType(actual: any, type: Type): void {
-        if (!TypeInfo.isLiteralOfType(actual, type)) {
-            throw new AssertionError(`Assert.isLiteralOfType failed. The value is not a literal of type '${type.name}'.`);
+    public static isLiteralOfType(actual: any, ctor: Constructor): void {
+        if (!Type.isLiteralOfType(actual, ctor)) {
+            throw new AssertionError(`Assert.isLiteralOfType failed. The value is not a literal of type '${ctor.name}'.`);
         }
     }
 
-    public static isNotLiteralOfType(actual: any, type: Type): void {
-        if (TypeInfo.isLiteralOfType(actual, type)) {
+    public static isNotLiteralOfType(actual: any, type: Constructor): void {
+        if (Type.isLiteralOfType(actual, type)) {
             throw new AssertionError(`Assert.isNotLiteralOfType failed. The value is a literal of type '${type.name}'.`);
         }
     }
 
-    public static isInstanceOfType(actual: any, type: Type): void {
-        if (!TypeInfo.isInstanceOfType(actual, type)) {
-            throw new AssertionError(`Assert.isInstanceOfType failed. The value is not an instance of type '${type.name}'.`);
+    public static isInstanceOfType(actual: any, ctor: Constructor): void {
+        if (!Type.isInstanceOfType(actual, ctor)) {
+            throw new AssertionError(`Assert.isInstanceOfType failed. The value is not an instance of type '${ctor.name}'.`);
         }
     }
 
-    public static isNotInstanceOfType(actual: any, type: Type): void {
-        if (TypeInfo.isInstanceOfType(actual, type)) {
-            throw new AssertionError(`Assert.isNotInstanceOfType failed. The value is an instance of type '${type.name}'.`);
+    public static isNotInstanceOfType(actual: any, ctor: Constructor): void {
+        if (Type.isInstanceOfType(actual, ctor)) {
+            throw new AssertionError(`Assert.isNotInstanceOfType failed. The value is an instance of type '${ctor.name}'.`);
         }
     }
 
-    public static throws<T extends Error>(type: Type<T>, action: () => unknown): T {
+    public static throws<T extends Error>(ctor: Constructor<T>, action: () => unknown): T {
         try {
             action();
             throw new AssertionError(`Assert.throws failed. The function did not throw an error.`);
@@ -142,8 +155,8 @@ export class Assert {
             if (error instanceof AssertionError) {
                 throw error;
             }
-            if (!(error instanceof type)) {
-                throw new AssertionError(`Assert.throws failed. Expected '${type.name}' but got '${error.name}' instead.`);
+            if (!(error instanceof ctor)) {
+                throw new AssertionError(`Assert.throws failed. Expected '${ctor.name}' but got '${error.name}' instead.`);
             }
             return error;
         }
@@ -156,35 +169,41 @@ export class TestStatus extends Enum {
     public static readonly FAILED_EXCEPTION: TestStatus = new TestStatus(3, "FAILED_EXCEPTION");
 }
 
-export class TestEntry {
+class TestEntry {
+    public displayName: string;
+
     public constructor(
         public readonly target: object,
-        public readonly property: string,
-        public displayName: string,
-        public readonly testArgs: any[][] = []) {
+        public readonly propertyKey: string,
+        public readonly args: any[][] = []) {
+        this.displayName = propertyKey;
     }
 
     public execute(testArgs: any[] = []): void {
-        const instance: Keyed<Action> = Object.create(this.target);
-        instance[this.property].apply(instance, testArgs);
+        const instance: Mapped<Action> = Object.create(this.target);
+        instance[this.propertyKey].apply(instance, testArgs);
+    }
+
+    public static createTestEntryKey(target: object, propertyKey: string): string {
+        return `${target.constructor.name}_${propertyKey}`;
     }
 }
 
 export class TestExecutionResult {
     public constructor(
         public readonly target: object,
-        public readonly property: string,
+        public readonly propertyKey: string,
         public readonly displayName: string,
         public readonly duration: Duration,
         public readonly status: TestStatus,
         public readonly error?: Error,
-        public readonly testArgs?: any[]) {
+        public readonly args?: any[]) {
     }
 
     public static passed(testEntry: TestEntry, started: Date): TestExecutionResult {
         return new TestExecutionResult(
             testEntry.target,
-            testEntry.property,
+            testEntry.propertyKey,
             testEntry.displayName,
             Duration.between(started, new Date(Date.now())),
             TestStatus.PASSED
@@ -194,7 +213,7 @@ export class TestExecutionResult {
     public static failed(testEntry: TestEntry, started: Date, error: Error, testArgs?: any[]): TestExecutionResult {
         return new TestExecutionResult(
             testEntry.target,
-            testEntry.property,
+            testEntry.propertyKey,
             testEntry.displayName,
             Duration.between(started, new Date(Date.now())),
             error instanceof AssertionError ? TestStatus.FAILED_ASSERTION : TestStatus.FAILED_EXCEPTION,
@@ -225,15 +244,15 @@ export class TestCompletionResult {
     }
 }
 
-export function test(...testArgs: any[]): Action2<object, string> {
-    return (target: object, property: string) => {
-        TestExecutive.getInstance().addTest(target, property, testArgs);
+export function test(...args: any[]): Action2<object, string> {
+    return (target: object, propertyKey: string): void => {
+        TestExecutive.getInstance().addTest(target, propertyKey, args);
     };
 }
 
 export function display(name: string): Action2<object, string> {
-    return (target: object, property: string) => {
-        TestExecutive.getInstance().addDisplayName(target, property, name);
+    return (target: object, propertyKey: string): void => {
+        TestExecutive.getInstance().addDisplayName(target, propertyKey, name);
     };
 }
 
@@ -243,7 +262,7 @@ export class TestExecutive {
     public readonly onExecuted: Observable<TestExecutive, TestExecutionResult>;
     public readonly onCompleted: Observable<TestExecutive, TestCompletionResult>;
     private readonly dispatcher: NotifyDispatcher<TestExecutive> = new NotifyDispatcher<TestExecutive>(this);
-    private readonly entries: Keyed<TestEntry> = {};
+    private readonly entries: Mapped<TestEntry> = {};
     private readonly results: TestExecutionResult[] = [];
 
     public constructor() {
@@ -251,33 +270,37 @@ export class TestExecutive {
         this.onCompleted = this.dispatcher.createObservable();
     }
 
-    public addTest(target: object, property: string, testArgs: any[] = []): void {
-        const key: string = `${target.constructor.name}_${property}`;
+    public addTest(target: object, propertyKey: string, args: any[]): void {
+        const key: string = TestEntry.createTestEntryKey(target, propertyKey);
         if (!Object.keys(this.entries).includes(key)) {
-            this.entries[key] = new TestEntry(target, property, property);
+            this.entries[key] = new TestEntry(target, propertyKey);
         }
-        this.entries[key].testArgs.push(testArgs);
+        this.entries[key].args.push(args);
     }
 
-    public addDisplayName(target: object, property: string, displayName: string): void {
-        const key: string = `${target.constructor.name}_${property}`;
+    public addDisplayName(target: object, propertyKey: string, displayName: string): void {
+        const key: string = TestEntry.createTestEntryKey(target, propertyKey);
         if (!Object.keys(this.entries).includes(key)) {
-            throw new InvalidOperationError(`Test with key '${key}' not found, Possibly missing @test decorator.`);
+            this.entries[key] = new TestEntry(target, propertyKey);
         }
         this.entries[key].displayName = displayName;
     }
 
     public run(): void {
         Object.values(this.entries).forEach(entry => {
-            entry.testArgs.reverse().forEach(testArgs => {
+            if (entry.args.length === 0) {
+                throw new InvalidOperationError("No test arguments. Possibly missing @test annotation.");
+            }
+
+            entry.args.reverse().forEach(args => {
                 const started: Date = new Date(Date.now());
                 let result: TestExecutionResult;
 
                 try {
-                    entry.execute(testArgs);
+                    entry.execute(args);
                     result = TestExecutionResult.passed(entry, started);
                 } catch (error) {
-                    result = TestExecutionResult.failed(entry, started, error, testArgs);
+                    result = TestExecutionResult.failed(entry, started, error, args);
                 }
 
                 this.results.push(result);

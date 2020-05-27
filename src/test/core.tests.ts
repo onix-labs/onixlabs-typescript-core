@@ -1,283 +1,507 @@
+import { test, display, Assert } from "../main/test";
+import { TestEnum, TEST_OBJECT, TEST_ARRAY, TEST_MAP, TEST_SET, C, B, A, Person } from "./_mockdata";
 import {
-    Enum,
+    Comparable,
     Equatable,
-    Flags,
-    Func2,
-    InvalidArgumentError,
-    InvalidFormatError,
-    InvalidOperationError,
     NotImplementedError,
-    NotSupportedError,
+    InvalidArgumentError,
+    InvalidOperationError,
+    InvalidFormatError,
     OutOfRangeError,
+    NotSupportedError,
+    Constructor,
+    Enum,
+    EnumSet,
+    Prototype,
     Type,
-    TypeInfo,
     Version,
-    Comparable
+    ObservableObject,
+    Observable,
+    PropertyChanged,
+    Action2
 } from "../main/core";
-import { Assert, display, test } from "../main/test";
-import { TextColor } from "../main/text";
 
 export class CoreTests {
 
-    @display("Thrown error should have the correct error type, name and message.")
+    @test(TestEnum.ONE, TestEnum.TWO, -1)
+    @test(TestEnum.TWO, TestEnum.TWO, 0)
+    @test(TestEnum.TWO, TestEnum.ONE, 1)
+    @display("Comparable.comparableCompare should produce the expected result.")
+    public comparable_comparableCompare(a: Comparable, b: Comparable, expected: number): void {
+        const actual: number = Comparable.comparableCompare(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TestEnum.ONE, TestEnum.TWO, -1)
+    @test(TestEnum.TWO, TestEnum.TWO, 0)
+    @test(TestEnum.TWO, TestEnum.ONE, 1)
+    @display("Comparable.compare should produce the expected result.")
+    public comparable_compare(a: TestEnum, b: TestEnum, expected: number): void {
+        const actual: number = Comparable.compare(a, b, color => color.value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TestEnum.ONE, TestEnum.ONE, true)
+    @test(TestEnum.ONE, TestEnum.TWO, false)
+    @display("Equatable.equatableEquals should produce the expected result.")
+    public equatable_equatableEquals(a: Equatable, b: Equatable, expected: boolean): void {
+        const actual: boolean = Equatable.equatableEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(123, 123, true)
+    @test(123, 456, false)
+    @test("abc", "abc", true)
+    @test("abc", "xyz", false)
+    @test(true, true, true)
+    @test(true, false, false)
+    @test([1, 2, 3], [1, 2, 3], true)
+    @test([1, 2, 3], [4, 5, 6], false)
+    @test(TEST_ARRAY, TEST_ARRAY, true)
+    @test(TEST_OBJECT, TEST_OBJECT, true)
+    @test(new Set([123, "abc"]), new Set([123, "abc"]), true)
+    @test(new Set([123, "abc"]), new Set([456, "xyz"]), false)
+    @test(new Map([[1, "abc"], [2, "xyz"]]), new Map([[1, "abc"], [2, "xyz"]]), true)
+    @test(new Map([[1, "abc"], [2, "xyz"]]), new Map([[1, "xyz"], [2, "abc"]]), false)
+    @test({ a: 123, b: "abc", c: [1, 2, 3], d: false }, { a: 123, b: "abc", c: [1, 2, 3], d: false }, true)
+    @test({ a: 123, b: "abc", c: [1, 2, 3], d: false }, { a: 456, b: "abc", c: [1, 2, 3], d: true }, false)
+    @display("Equatable.equals should produce the expected result.")
+    public equatable_equals(a: unknown, b: unknown, expected: boolean): void {
+        const actual: boolean = Equatable.equals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(123, 123, true)
+    @test(123, 456, false)
+    @test("abc", "abc", true)
+    @test("abc", "xyz", false)
+    @test(true, true, true)
+    @test(true, false, false)
+    @test(TEST_ARRAY, TEST_ARRAY, true)
+    @test(TEST_OBJECT, TEST_OBJECT, true)
+    @display("Equatable.valueEquals should produce the expected result.")
+    public equatable_valueEquals(a: unknown, b: unknown, expected: boolean): void {
+        const actual: boolean = Equatable.valueEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TEST_OBJECT, TEST_OBJECT, true)
+    @test({ a: 123, b: "abc", c: [1, 2, 3], d: false }, { a: 123, b: "abc", c: [1, 2, 3], d: false }, true)
+    @test({ a: 123, b: "abc", c: [1, 2, 3], d: false }, { a: 456, b: "abc", c: [1, 2, 3], d: true }, false)
+    @display("Equatable.objectEquals should produce the expected result.")
+    public equatable_objectEquals(a: object, b: object, expected: boolean): void {
+        const actual: boolean = Equatable.objectEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TEST_MAP, TEST_MAP, true)
+    @test(new Map([[1, "abc"], [2, "xyz"]]), new Map([[1, "abc"], [2, "xyz"]]), true)
+    @test(new Map([[1, "abc"], [2, "xyz"]]), new Map([[1, "xyz"], [2, "abc"]]), false)
+    @display("Equatable.mapEquals should produce the expected result.")
+    public equatable_mapEquals(a: Map<unknown, unknown>, b: Map<unknown, unknown>, expected: boolean): void {
+        const actual: boolean = Equatable.mapEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TEST_SET, TEST_SET, true)
+    @test(new Set([123, "abc"]), new Set([123, "abc"]), true)
+    @test(new Set([123, "abc"]), new Set([456, "xyz"]), false)
+    @display("Equatable.setEquals should produce the expected result.")
+    public equatable_setEquals(a: Set<unknown>, b: Set<unknown>, expected: boolean): void {
+        const actual: boolean = Equatable.setEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TEST_ARRAY, TEST_ARRAY, true)
+    @test([1, 2, 3], [1, 2, 3], true)
+    @test([1, 2, 3], [1, 2, 4], false)
+    @test([1, 2, 3], [3, 2, 1], false)
+    @test([1, 2, 3], [4, 2, 1], false)
+    @test([1, 2, 3, 3], [1, 2, 3, 3], true)
+    @test([1, 2, 3, 3], [1, 2, 3, 4], false)
+    @test([1, 2, 3, 3], [3, 2, 3, 1], false)
+    @test([1, 2, 3, 3], [4, 2, 3, 1], false)
+    @test(["a", "b", "c"], ["a", "b", "c"], true)
+    @test(["a", "b", "c"], ["a", "b", "d"], false)
+    @test(["a", "b", "c"], ["c", "b", "a"], false)
+    @test(["a", "b", "c"], ["d", "b", "a"], false)
+    @test(["a", "b", "c", "c"], ["a", "b", "c", "c"], true)
+    @test(["a", "b", "c", "c"], ["a", "b", "c", "d"], false)
+    @test(["a", "b", "c", "c"], ["c", "b", "c", "a"], false)
+    @test(["a", "b", "c", "c"], ["d", "b", "c", "a"], false)
+    @display("Equatable.orderedArrayEquals should produce the expected result.")
+    public equatable_orderedArrayEquals(a: unknown[], b: unknown[], expected: boolean): void {
+        const actual: boolean = Equatable.orderedArrayEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(TEST_ARRAY, TEST_ARRAY, true)
+    @test([1, 2, 3], [1, 2, 3], true)
+    @test([1, 2, 3], [1, 2, 4], false)
+    @test([1, 2, 3], [3, 2, 1], true)
+    @test([1, 2, 3], [4, 2, 1], false)
+    @test([1, 2, 3, 3], [1, 2, 3, 3], true)
+    @test([1, 2, 3, 3], [1, 2, 3, 4], false)
+    @test([1, 2, 3, 3], [3, 2, 3, 1], true)
+    @test([1, 2, 3, 3], [4, 2, 3, 1], false)
+    @test(["a", "b", "c"], ["a", "b", "c"], true)
+    @test(["a", "b", "c"], ["a", "b", "d"], false)
+    @test(["a", "b", "c"], ["c", "b", "a"], true)
+    @test(["a", "b", "c"], ["d", "b", "a"], false)
+    @test(["a", "b", "c", "c"], ["a", "b", "c", "c"], true)
+    @test(["a", "b", "c", "c"], ["a", "b", "c", "d"], false)
+    @test(["a", "b", "c", "c"], ["c", "b", "c", "a"], true)
+    @test(["a", "b", "c", "c"], ["d", "b", "c", "a"], false)
+    @display("Equatable.unorderedArrayEquals should produce the expected result.")
+    public equatable_unorderedArrayEquals(a: unknown[], b: unknown[], expected: boolean): void {
+        const actual: boolean = Equatable.unorderedArrayEquals(a, b);
+        Assert.isEqual(expected, actual);
+    }
+
     @test(NotImplementedError, "NotImplementedError", "Not implemented.")
     @test(InvalidArgumentError, "InvalidArgumentError", "Invalid argument.")
     @test(InvalidOperationError, "InvalidOperationError", "Invalid operation.")
     @test(InvalidFormatError, "InvalidFormatError", "Invalid format.")
     @test(OutOfRangeError, "OutOfRangeError", "Out of range.")
     @test(NotSupportedError, "NotSupportedError", "Not supported.")
-    public thrownErrorShouldHaveCorrectTypeNameAndMessage(type: Type<Error>, name: string, message: string): void {
-        const error: Error = Assert.throws(type, () => { throw new type(); });
-        Assert.isInstanceOfType(error, type);
+    @display("Custom error should produce the expected name and error message")
+    public error_constructor(ctor: Constructor<Error>, name: string, message: string): void {
+        const error: Error = Assert.throws(ctor, () => { throw new ctor(); });
         Assert.isEqual(name, error.name);
         Assert.isEqual(message, error.message);
     }
 
-    @display("Comparable.compare should produce the expected numeric order.")
-    @test({ value: 1 }, { value: 1 }, 0)
-    @test({ value: 1 }, { value: 2 }, -1)
-    @test({ value: 2 }, { value: 1 }, 1)
-    @test({ value: 123 }, { value: 123 }, 0)
-    @test({ value: 123 }, { value: 456 }, -1)
-    @test({ value: 456 }, { value: 123 }, 1)
-    public comparableCompareShouldProduceExpectedNumericOrder(a: any, b: any, expected: number): void {
-        const actual: number = Comparable.compare(a, b, o => o.value);
+    @test(TestEnum.ONE, TestEnum.ONE, true)
+    @test(TestEnum.ONE, TestEnum.TWO, false)
+    @display("Enum.equals should produce the expected result.")
+    public enum_equals(a: Enum, b: Enum, expected: boolean): void {
+        const actual: boolean = a.equals(b);
         Assert.isEqual(expected, actual);
     }
 
-    @display("Equatable.equals should return true when value references are equal.")
-    @test({ key: "test", value: 123 })
-    @test(123)
-    @test(NaN)
-    @test("abc")
-    @test(true)
-    public equatableEqualsShouldReturnTrueWhenObjectReferencesAreEqual(a: any): void {
-        const b: any = a;
-        const actual: boolean = Equatable.equals(a, b);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.equals should return true when values are equal.")
-    @test(123, 123)
-    @test("abc", "abc")
-    @test(true, true)
-    @test(NaN, NaN)
-    public equatableEqualsShouldReturnTrueWhenValueReferencesAreNotEqual(a: any, b: any): void {
-        const actual: boolean = Equatable.equals(a, b);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.equatableEquals should return true when equatable values are equal.")
-    @test(TextColor.BLACK, TextColor.BLACK)
-    @test(Version.parse("1.2.3"), Version.parse("1.2.3"))
-    @test(new TypeInfo(123), new TypeInfo(456))
-    public equatableEquatableEqualsShouldReturnTrueWhenReferencesAreEqual(
-        a: Equatable<any>, b: Equatable<any>): void {
-        const actual: boolean = Equatable.equatableEquals(a, b);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.equatableEquals should return false when equatable values are not equal.")
-    @test(TextColor.BLACK, TextColor.WHITE)
-    @test(Version.parse("1.2.3"), Version.parse("3.2.1"))
-    @test(new TypeInfo(123), new TypeInfo("abc"))
-    public equatableEquatableEqualsShouldReturnFalseWhenReferencesAreNotEqual(
-        a: Equatable<any>, b: Equatable<any>): void {
-        const actual: boolean = Equatable.equatableEquals(a, b);
-        Assert.isFalse(actual);
-    }
-
-    @display("Equatable.orderedArrayEquals should return true when the arrays are identical.")
-    @test([1, 2, 3], [1, 2, 3], Equatable.equals)
-    @test(["a", "b", "c"], ["a", "b", "c"], Equatable.equals)
-    @test([/[a-z]/, /[A-Z]/], [/[a-z]/, /[A-Z]/], Equatable.equals)
-    public equatableOrderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
-        a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Equatable.orderedArrayEquals(a, b, comparer);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.orderedArrayEquals should return false when the arrays are not identical.")
-    @test([1, 2, 3], [3, 2, 1], Equatable.equals)
-    @test(["a", "b", "c"], ["c", "b", "a"], Equatable.equals)
-    @test([/[a-z]/, /[A-Z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public equatableOrderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
-        a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Equatable.orderedArrayEquals(a, b, comparer);
-        Assert.isFalse(actual);
-    }
-
-    @display("Equatable.unorderedArrayEquals should return true when the arrays are identical.")
-    @test([1, 2, 3], [1, 2, 3], Equatable.equals)
-    @test(["a", "b", "c"], ["a", "b", "c"], Equatable.equals)
-    @test([/[a-z]/, /[A-Z]/], [/[a-z]/, /[A-Z]/], (a: any, b: any) => a.toString() === b.toString())
-    public equatableUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdentical(
-        a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.unorderedArrayEquals should return true when the arrays are identical but unordered.")
-    @test([1, 2, 3, 1], [3, 2, 1, 1], Equatable.equals)
-    @test(["a", "b", "c", "a"], ["c", "b", "a", "a"], Equatable.equals)
-    @test([/[a-z]/, /[A-Z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public equatableUnorderedArrayEqualsShouldReturnTrueWhenTheArraysAreIdenticalButUnordered(
-        a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
-        Assert.isTrue(actual);
-    }
-
-    @display("Equatable.unorderedArrayEquals should return false when the arrays are not identical.")
-    @test([1, 2, 3], [3, 2, 1, 1], Equatable.equals)
-    @test(["a", "b", "c"], ["c", "b", "a", "a"], Equatable.equals)
-    @test([/[a-z]/], [/[A-Z]/, /[a-z]/], (a: any, b: any) => a.toString() === b.toString())
-    public equatableUnorderedArrayEqualsShouldReturnFalseWhenTheArraysAreNotIdentical(
-        a: any[], b: any[], comparer: Func2<any, any, boolean>): void {
-        const actual: boolean = Equatable.unorderedArrayEquals(a, b, comparer);
-        Assert.isFalse(actual);
-    }
-
-    @display("Enum.compareTo should produce the expected numeric order.")
-    @test(TextColor.BLACK, TextColor.BLACK, 0)
-    @test(TextColor.BLACK, TextColor.WHITE, -1)
-    @test(TextColor.WHITE, TextColor.BLACK, 1)
-    public enumCompareToShouldProduceTheExpectedNumericOrder(a: Enum, b: Enum, expected: number): void {
+    @test(TestEnum.TWO, TestEnum.ONE, 1)
+    @test(TestEnum.ONE, TestEnum.ONE, 0)
+    @test(TestEnum.ONE, TestEnum.TWO, -1)
+    @display("Enum.compareTo should produce the expected result.")
+    public enum_compareTo(a: Enum, b: Enum, expected: number): void {
         const actual: number = a.compareTo(b);
         Assert.isEqual(expected, actual);
     }
 
-    @display("Enum.equals should return true when enum values are equal.")
-    @test(TextColor.BLACK, TextColor.BLACK)
-    public enumEqualsShouldReturnTrueWhenEnumValuesAreEqual(a: Enum, b: Enum): void {
+    @test(TestEnum.ONE, "ONE")
+    @test(TestEnum.TWO, "TWO")
+    @display("Enum.toString should produce the expected result.")
+    public enum_toString(e: Enum, expected: string): void {
+        const actual: string = e.toString();
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Enum.getAll should get all entries from an enumeration.")
+    public enum_getAll(): void {
+        const expected: TestEnum[] = [TestEnum.ONE, TestEnum.TWO];
+        const actual: TestEnum[] = TestEnum.getAll();
+        Assert.isUnorderedArrayEquals(expected, actual);
+    }
+
+    @test("ONE", TestEnum.ONE)
+    @test("TWO", TestEnum.TWO)
+    @display("Enum.fromName should get the correct entry from an enumeration.")
+    public enum_fromName(name: string, expected: Enum): void {
+        const actual: TestEnum = TestEnum.fromName(name)!;
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(1, TestEnum.ONE)
+    @test(2, TestEnum.TWO)
+    @display("Enum.fromValue should get the correct entry from an enumeration.")
+    public enum_fromValue(value: number, expected: Enum): void {
+        const actual: TestEnum = TestEnum.fromValue(value)!;
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("EnumSet.constructor should construct an enum set.")
+    public enumSet_constructor(): void {
+        const set: EnumSet<TestEnum> = new EnumSet(TestEnum.ONE, TestEnum.TWO, TestEnum.TWO);
+        const expected: TestEnum[] = [TestEnum.ONE, TestEnum.TWO];
+        const actual: TestEnum[] = set.toArray();
+        Assert.isUnorderedArrayEquals(expected, actual);
+    }
+
+    @test(new EnumSet<TestEnum>(TestEnum.ONE), new EnumSet<TestEnum>(TestEnum.ONE), true)
+    @test(new EnumSet<TestEnum>(TestEnum.ONE), new EnumSet<TestEnum>(TestEnum.TWO), false)
+    @test(new EnumSet<TestEnum>(TestEnum.ONE, TestEnum.TWO), new EnumSet<TestEnum>(TestEnum.TWO, TestEnum.ONE), true)
+    @test(new EnumSet<TestEnum>(TestEnum.ONE, TestEnum.TWO), new EnumSet<TestEnum>(TestEnum.TWO, TestEnum.TWO), false)
+    @display("EnumSet.equals should produce the expected result.")
+    public enumSet_equals(a: EnumSet<Enum>, b: EnumSet<Enum>, expected: boolean): void {
         const actual: boolean = a.equals(b);
-        Assert.isTrue(actual);
-    }
-
-    @display("Enum.equals should return false when enum values are equal.")
-    @test(TextColor.BLACK, TextColor.WHITE)
-    public enumEqualsShouldReturnFalseWhenEnumValuesAreNotEqual(a: Enum, b: Enum): void {
-        const actual: boolean = a.equals(b);
-        Assert.isFalse(actual);
-    }
-
-    @display("Enum.toString should return the enum name.")
-    @test(TextColor.BLACK, "BLACK")
-    @test(TextColor.DARK_MAGENTA, "DARK_MAGENTA")
-    @test(TextColor.LIGHT_YELLOW, "LIGHT_YELLOW")
-    public enumToStringShouldReturnTheEnumName(a: Enum, expected: string): void {
-        const actual: string = a.toString();
         Assert.isEqual(expected, actual);
     }
 
-    @display("Enum.getAll should return all enum instances.")
     @test()
-    public enumGetAllShouldReturnAllEnumInstances(): void {
-        const actual: Enum[] = TextColor.getAll();
-        const expected: Enum[] = [
-            TextColor.BLACK, TextColor.DARK_BLUE, TextColor.DARK_CYAN, TextColor.DARK_GRAY,
-            TextColor.DARK_GREEN, TextColor.DARK_MAGENTA, TextColor.DARK_RED, TextColor.DARK_YELLOW,
-            TextColor.LIGHT_BLUE, TextColor.LIGHT_CYAN, TextColor.LIGHT_GRAY, TextColor.LIGHT_GREEN,
-            TextColor.LIGHT_MAGENTA, TextColor.LIGHT_RED, TextColor.LIGHT_YELLOW, TextColor.WHITE
-        ];
-
-        Assert.isUnorderedArrayEquals(expected, actual, Equatable.equatableEquals);
+    @display("EnumSet.toArray should be produce the expected array.")
+    public enumSet_toArray(): void {
+        const set: EnumSet<TestEnum> = new EnumSet(TestEnum.TWO, TestEnum.TWO, TestEnum.ONE);
+        const expected: TestEnum[] = [TestEnum.ONE, TestEnum.TWO];
+        const actual: TestEnum[] = set.toArray();
+        Assert.isOrderedArrayEquals(expected, actual);
     }
 
-    @display("Enum.fromName should return an enum instance from its name.")
-    @test("BLACK", TextColor.BLACK)
-    @test("DARK_GREEN", TextColor.DARK_GREEN)
-    public enumFromNameShouldReturnAnEnumInstanceFromItsName(name: string, expected: Enum): void {
-        const actual: Enum = TextColor.fromName(name);
+    @test()
+    @display("EnumSet.toString should be produce the expected string.")
+    public enumSet_toString(): void {
+        const set: EnumSet<TestEnum> = new EnumSet(TestEnum.TWO, TestEnum.TWO, TestEnum.ONE);
+        const expected: string = "ONE, TWO";
+        const actual: string = set.toString();
         Assert.isEqual(expected, actual);
     }
 
-    @display("Enum.fromValue should return an enum instance from its value.")
-    @test(0, TextColor.BLACK)
-    @test(2, TextColor.DARK_GREEN)
-    public enumFromNameShouldReturnAnEnumInstanceFromItsValue(value: number, expected: Enum): void {
-        const actual: Enum = TextColor.fromValue(value);
-        Assert.isEqual(expected, actual);
-    }
-
-    @display("Flags should construct a flag set.")
-    @test()
-    public flagsShouldConstructAFlagSet(): void {
-        const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE];
-        const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
-    }
-
-    @display("Flags.addFlag should add an enum to the flag set.")
-    @test()
-    public flagsAddFlagShouldAddAnEnumToTheFlagSet(): void {
-        const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE, TextColor.DARK_BLUE];
-        const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE);
-        actual.add(TextColor.DARK_BLUE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
-    }
-
-    @display("Flags.removeFlag should remove an enum from the flag set.")
-    @test()
-    public flagsRemoveFlagShouldRemoveAnEnumFromTheFlagSet(): void {
-        const expected: Enum[] = [TextColor.BLACK, TextColor.WHITE];
-        const actual: Flags<TextColor> = new Flags(TextColor.BLACK, TextColor.WHITE, TextColor.DARK_BLUE);
-        actual.delete(TextColor.DARK_BLUE);
-        Assert.isUnorderedArrayEquals(expected, actual.toArray(), Equatable.equatableEquals);
-    }
-
-    @display("Flags.toString should correctly format a flag set.")
-    @test()
-    public flagsToStringShouldCorrectlyFormatAFlagSet(): void {
-        const flags: Flags<TextColor> = new Flags(TextColor.WHITE, TextColor.BLACK, TextColor.DARK_BLUE);
-        const expected: string = "BLACK, DARK_BLUE, WHITE";
-        const actual: string = flags.toString();
-        Assert.isEqual(expected, actual);
-    }
-
-    @display("TypeInfo should construct from a literal.")
-    @test("", String, Object, "String", false, false)
-    @test(0, Number, Object, "Number", false, false)
-    @test(true, Boolean, Object, "Boolean", false, false)
-    @test({}, Object, undefined, "Object", false, false)
-    @test([], Array, Object, "Array", true, false)
-    @test(/[a-z]/, RegExp, Object, "RegExp", false, false)
-    @test(() => undefined, Function, Object, "Function", false, true)
-    public typeInfoShouldConstructFromLiteral(
-        literal: any,
-        type: Type<any>,
-        superType: Type<any>,
+    @test([], Array, Array.prototype, "Array", true, false)
+    @test({}, Object, Object.prototype, "Object", false, false)
+    @test(0, Number, Number.prototype, "Number", false, false)
+    @test("", String, String.prototype, "String", false, false)
+    @test(true, Boolean, Boolean.prototype, "Boolean", false, false)
+    @test(/[A-Z]/, RegExp, RegExp.prototype, "RegExp", false, false)
+    @test(() => undefined, Function, Function.prototype, "Function", false, true)
+    @display("Type.constructor should construct a type.")
+    public type_constructor(
+        literal: Prototype<unknown>,
+        constructor: Constructor<unknown>,
+        prototype: Prototype<unknown>,
         name: string,
         isArray: boolean,
         isCallable: boolean): void {
-        const typeInfo: TypeInfo<any> = new TypeInfo(literal);
-        Assert.isEqual(type, typeInfo.type);
-        Assert.isEqual(superType, typeInfo.superType);
-        Assert.isEqual(name, typeInfo.type.name);
-        Assert.isEqual(isArray, typeInfo.isArray);
-        Assert.isEqual(isCallable, typeInfo.isCallable);
+        const type: Type<unknown> = Type.from(literal);
+        Assert.isEqual(constructor, type.getConstructor());
+        Assert.isEqual(prototype, type.prototype);
+        Assert.isEqual(name, type.name);
+        Assert.isEqual(isArray, type.isArray);
+        Assert.isEqual(isCallable, type.isCallable);
     }
 
-    @display("TypeInfo should construct from an instance.")
-    @test(new String(""), String, Object, "String", false, false)
-    @test(new Number(0), Number, Object, "Number", false, false)
-    @test(new Boolean(true), Boolean, Object, "Boolean", false, false)
-    @test(new Object({}), Object, undefined, "Object", false, false)
-    @test(new Array([]), Array, Object, "Array", true, false)
-    @test(new RegExp(/[a-z]/), RegExp, Object, "RegExp", false, false)
-    @test(new NotImplementedError(), NotImplementedError, Error, "NotImplementedError", false, false)
-    @test(() => undefined, Function, Object, "Function", false, true)
-    public typeInfoShouldConstructFromInstance(
-        instance: any,
-        type: Type<any>,
-        superType: Type<any>,
-        name: string,
-        isArray: boolean,
-        isCallable: boolean): void {
-        const typeInfo: TypeInfo<any> = new TypeInfo(instance);
-        Assert.isEqual(type, typeInfo.type);
-        Assert.isEqual(superType, typeInfo.superType);
-        Assert.isEqual(name, typeInfo.type.name);
-        Assert.isEqual(isArray, typeInfo.isArray);
-        Assert.isEqual(isCallable, typeInfo.isCallable);
+    @test(Type.from(123), Type.from(45.6), true)
+    @test(Type.from(123), Type.from("abc"), false)
+    @display("Type.equals should produce the expected result.")
+    public type_equals(a: Type<unknown>, b: Type<unknown>, expected: boolean): void {
+        const actual: boolean = a.equals(b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test({}, Object)
+    @test(12, Number)
+    @test("", String)
+    @test([1], Array)
+    @test(true, Boolean)
+    @test(() => undefined, Function)
+    @display("Type.getConstructor should produce the expected result.")
+    public type_getConstructor(a: Prototype<unknown>, expected: Type<unknown>): void {
+        const actual: Constructor<unknown> = Type.from(a).getConstructor();
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Type.getConstructorHierarchy should produce the expected result.")
+    public type_getConstructorHierarchy(): void {
+        const expected: Constructor[] = [C, B, A, Object];
+        const actual: Constructor[] = Type.from(new C()).getConstructorHierarchy();
+        Assert.isOrderedArrayEquals(expected, actual);
+    }
+
+    @test()
+    @display("Type.getConstructorNameHierarchy should produce the expected result.")
+    public type_getConstructorNameHierarchy(): void {
+        const expected: string[] = ["C", "B", "A", "Object"];
+        const actual: string[] = Type.from(new C()).getConstructorNameHierarchy();
+        Assert.isOrderedArrayEquals(expected, actual);
+    }
+
+    @test({}, "Object")
+    @test(12, "Number")
+    @test("", "String")
+    @test([1], "Array")
+    @test(true, "Boolean")
+    @test(() => undefined, "Function")
+    @display("Type.toString should produce the expected result.")
+    public type_toString(value: Prototype<unknown>, expected: string): void {
+        const actual: string = Type.from(value).toString();
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(null, true)
+    @test(undefined, false)
+    @test({}, false)
+    @display("Type.isNull should produce the expected result.")
+    public type_isNull(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isNull(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(undefined, true)
+    @test(null, false)
+    @test({}, false)
+    @display("Type.isUndefined should produce the expected result.")
+    public type_isUndefined(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isUndefined(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(undefined, true)
+    @test(null, true)
+    @test({}, false)
+    @display("Type.isNullOrUndefined should produce the expected result.")
+    public type_isNullOrUndefined(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isNullOrUndefined(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test({}, false)
+    @test(123, false)
+    @test(() => undefined, true)
+    @test(new Function(), true)
+    @display("Type.isCallable should produce the expected result.")
+    public type_isCallable(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isCallable(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(123, Number, true)
+    @test("1", Number, false)
+    @test(new Number(123), Number, false)
+    @display("Type.isLiteralOfType should produce the expected result.")
+    public type_isLiteralOfType(value: unknown, constructor: Constructor<unknown>, expected: boolean): void {
+        const actual: boolean = Type.isLiteralOfType(value, constructor);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(123, Number, false)
+    @test("1", Number, false)
+    @test(new Number(123), Number, true)
+    @display("Type.isInstanceOfType should produce the expected result.")
+    public type_isInstanceOfType(value: unknown, constructor: Constructor<unknown>, expected: boolean): void {
+        const actual: boolean = Type.isInstanceOfType(value, constructor);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Version.constructor should construct a version.")
+    public version_constructor(): void {
+        const version: Version = new Version(1, 2, 3);
+        const expected: string = "1.2.3";
+        const actual: string = version.toString();
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(new Version(1, 2, 3), new Version(1, 2, 3), true)
+    @test(new Version(1, 2, 3), new Version(2, 3, 4), false)
+    @display("Version.equals should produce the expected result.")
+    public version_equals(a: Version, b: Version, expected: boolean): void {
+        const actual: boolean = a.equals(b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(new Version(1, 0, 0), "1.0.0")
+    @test(new Version(1, 2, 3), "1.2.3")
+    @display("Version.toString should produce the expected result.")
+    public version_toString(version: Version, expected: string): void {
+        const actual: string = version.toString();
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("1.0.0", new Version(1, 0, 0))
+    @test("1.2.3", new Version(1, 2, 3))
+    @display("Version.parse should produce the expected result.")
+    public version_parse(version: string, expected: Version): void {
+        const actual: Version = Version.parse(version);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Observable.equals should produce the expected result.")
+    public observable_equals(): void {
+        const a: ObservableObject<Person> = Observable.fromObject({
+            firstName: "John",
+            lastName: "Smith",
+            birthday: new Date(Date.parse("2000-05-01T00:00:00Z"))
+        });
+
+        const b: ObservableObject<Person> = Observable.fromObject({
+            firstName: "John",
+            lastName: "Smith",
+            birthday: new Date(Date.parse("2000-05-01T00:00:00Z"))
+        });
+
+        const result: boolean = a.equals(b);
+
+        Assert.isTrue(result);
+    }
+
+    @test()
+    @display("Observable.subscribe should subscribe an observer.")
+    public observable_subscribe(): void {
+        const expected: string[] = ["Jack"];
+        const actual: string[] = [];
+        const observer: Action2<PropertyChanged<String, unknown>, Person> = update => {
+            actual.push(update.newValue as string);
+        };
+
+        const observable: ObservableObject<Person> = Observable.fromObject({
+            firstName: "John",
+            lastName: "Smith",
+            birthday: new Date(Date.parse("2000-05-01T00:00:00Z"))
+        });
+
+        observable.subscribe(observer);
+        observable.firstName = "Jack";
+
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Observable.unsubscribe should unsubscribe an observer.")
+    public observable_unsubscribe(): void {
+        const expected: string[] = ["Jack"];
+        const actual: string[] = [];
+        const observer: Action2<PropertyChanged<String, unknown>, Person> = update => {
+            actual.push(update.newValue as string);
+        };
+
+        const observable: ObservableObject<Person> = Observable.fromObject({
+            firstName: "John",
+            lastName: "Smith",
+            birthday: new Date(Date.parse("2000-05-01T00:00:00Z"))
+        });
+
+        observable.subscribe(observer);
+        observable.firstName = "Jack";
+
+        observable.unsubscribe(observer);
+        observable.firstName = "John";
+
+        Assert.isEqual(expected, actual);
+    }
+
+    @test()
+    @display("Observable.unsubscribeAll should unsubscribe an observer.")
+    public observable_unsubscribeAll(): void {
+        const expected: string[] = ["Jack"];
+        const actual: string[] = [];
+        const observer: Action2<PropertyChanged<String, unknown>, Person> = update => {
+            actual.push(update.newValue as string);
+        };
+
+        const observable: ObservableObject<Person> = Observable.fromObject({
+            firstName: "John",
+            lastName: "Smith",
+            birthday: new Date(Date.parse("2000-05-01T00:00:00Z"))
+        });
+
+        observable.subscribe(observer);
+        observable.firstName = "Jack";
+
+        observable.unsubscribeAll();
+        observable.firstName = "John";
+
+        Assert.isEqual(expected, actual);
     }
 }

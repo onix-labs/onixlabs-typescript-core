@@ -1,4 +1,4 @@
-import { Comparable, Enum, Equatable, Formattable, Formatter, Keyed } from "./core";
+import { Comparable, Enum, Equatable, Formattable, Formatter, Mapped } from "./core";
 
 export class Duration implements Comparable<Duration>, Equatable<Duration>, Formattable<Duration> {
     public readonly weeks: number = 0;
@@ -33,10 +33,6 @@ export class Duration implements Comparable<Duration>, Equatable<Duration>, Form
         ] = this.initializeTotals(totalMilliseconds);
     }
 
-    public static between(start: Date, end: Date): Duration {
-        return new Duration(end.getTime() - start.getTime());
-    }
-
     public addDuration(duration: Duration): Duration {
         return new Duration(this.totalMilliseconds + duration.totalMilliseconds);
     }
@@ -49,12 +45,12 @@ export class Duration implements Comparable<Duration>, Equatable<Duration>, Form
         return this.totalMilliseconds === other.totalMilliseconds;
     }
 
-    public format(formatter: Formatter<Duration> = new DefaultDurationFormatter()): string {
+    public format(formatter: Formatter<Duration>): string {
         return formatter.format(this);
     }
 
     public toString(): string {
-        return this.format();
+        return this.format(new DefaultDurationFormatter());
     }
 
     private initializeComponents(milliseconds: number): number[] {
@@ -77,19 +73,25 @@ export class Duration implements Comparable<Duration>, Equatable<Duration>, Form
 
         return result;
     }
+
+    public static between(start: Date, end: Date): Duration {
+        return new Duration(end.getTime() - start.getTime());
+    }
 }
 
-export class DefaultDurationFormatter implements Formatter<Duration> {
+export class DefaultDurationFormatter extends Formatter<Duration> {
     public format(value: Duration): string {
         return `${value.weeks / 7 + value.days}.${value.hours}:${value.minutes}:${value.seconds}.${value.milliseconds}`;
     }
 }
 
-export class LongDurationFormatter implements Formatter<Duration> {
-    public constructor(private readonly truncateEmptyEntries: boolean = false) { }
+export class LongDurationFormatter extends Formatter<Duration> {
+    public constructor(private readonly truncateEmptyEntries: boolean = false) {
+        super();
+    }
 
     public format(value: Duration): string {
-        const entries: Keyed<number> = {
+        const entries: Mapped<number> = {
             weeks: value.weeks,
             days: value.days,
             hours: value.hours,
