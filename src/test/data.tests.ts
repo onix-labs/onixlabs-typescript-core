@@ -1,5 +1,5 @@
 import { display, test, Assert } from "../main/test";
-import { Pair } from "../main/data";
+import { MutableKeyValuePair as Pair } from "../main/data";
 
 export class DataTests {
 

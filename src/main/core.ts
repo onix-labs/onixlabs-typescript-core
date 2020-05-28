@@ -34,13 +34,12 @@ export type Indexed<T = unknown> = object & { [index: number]: T };
 export type Mapped<T = unknown> = object & { [key: string]: T };
 
 /**
- * Represents a type constructor.
+ * Represents a type constructor, rather than a primitive, prototype or instance.
  */
 export type Constructor<T = unknown> = Function & (new (...args: any[]) => T);
 
 /**
- * Represents a prototype which includes instances or literals that extend the prototype.
- * Note: Use of the any type is strictly discouraged; for example, Prototype<any>.
+ * Represents a prototype, including primitives and instances that derive from the prototype.
  */
 export type Prototype<T = unknown> = T extends Constructor<unknown> ? never : T & {
     readonly constructor: Function;
@@ -538,8 +537,7 @@ export abstract class Enum implements Equatable<Enum>, Comparable<Enum> {
 
     /**
      * Compares two objects that implement Comparable.
-     * @param left The left-hand-side object to compare.
-     * @param right The right-hand-side object to compare.
+     * @param other The other object to compare with this object.
      * @returns Returns a numeric value indicating the relative order of the left object to the right object.
      */
     public compareTo(other: Enum): number {
@@ -733,7 +731,7 @@ export class Type<T = unknown> implements Equatable<Type<T>> {
         this.prototype = Object.getPrototypeOf(prototype);
         this.name = this.prototype.constructor.name;
         this.isArray = Array.isArray(prototype);
-        this.isCallable = Type.isCallable(prototype);
+        this.isCallable = Type.isFunction(prototype);
     }
 
     /**
@@ -825,43 +823,75 @@ export class Type<T = unknown> implements Equatable<Type<T>> {
     }
 
     /**
-     * Determines whether the specified value is callable.
-     * @param value The value to determine is callable.
-     * @returns Returns true if the value is callable; otherwise, false.
-     */
-    public static isCallable(value: unknown): boolean {
-        return !Type.isNullOrUndefined(value)
-            && (typeof value === "function" || Object.prototype.toString.call(value) === "[object Function]");
-    }
-
-    /**
-     * Determines whether the specified value is a literal of the specified type.
-     * @param value The value to determine is a literal of the specified type.
-     * @param constructor The type to determine whether the value is a literal.
-     * @returns Returns true of if the value is a literal of the specified type; otherwise, false.
-     */
-    public static isLiteralOfType(value: any, constructor: Constructor<any>): boolean {
-        const toString: Func<string> = Object.prototype.toString;
-        return !Type.isNullOrUndefined(value)
-            && !Type.isInstanceOfType(value, constructor)
-            && toString.call(value) === toString.call(new constructor().valueOf());
-    }
-
-    /**
      * Determines whether the specified value is an instance of the specified type.
      * @param value The value to determine is an instance of the specified type.
-     * @param constructor The type to determine whether the value is an instance.
-     * @returns Returns true of if the value is an instance of the specified type; otherwise, false.
+     * @param constructor The constructor of the type.
+     * @return Returns true if the value is an instance of the specified type; otherwise, false.
      */
-    public static isInstanceOfType(value: any, constructor: Constructor): boolean {
-        return !Type.isNullOrUndefined(value) && value instanceof constructor;
+    public static isInstanceOfType(value: unknown, constructor: Constructor<any>): boolean {
+        return value instanceof constructor;
+    }
+
+    /**
+     * Determines whether the specified value is a primitive of the specified type.
+     * @param value The value to determine is a primitive of the specified type.
+     * @param constructor The constructor of the type.
+     * @return Returns true if the value is a primitive of the specified type; otherwise, false.
+     */
+    public static isPrimitiveOfType(value: unknown, constructor: Constructor<any>): boolean {
+        const primitives: Mapped = {
+            "string": String,
+            "number": Number,
+            "bigint": BigInt,
+            "boolean": Boolean,
+            "symbol": Symbol
+        };
+        const type: any = primitives[typeof value];
+        return !Type.isNullOrUndefined(type) && type === constructor;
+    }
+
+    public static isPrimitive(value: unknown): boolean {
+        const primitives: string[] = ["string", "number", "bigint", "boolean", "symbol", "undefined"];
+        return primitives.includes(typeof value);
+    }
+
+    public static isBoolean(value: unknown, allowInstance: boolean = false): boolean {
+        return typeof value === "boolean" || (allowInstance && value instanceof Boolean);
+    }
+
+    public static isNumber(value: unknown, allowInstance: boolean = false): boolean {
+        return typeof value === "number" || (allowInstance && value instanceof Number);
+    }
+
+    public static isBigInt(value: unknown, allowInstance: boolean = false): boolean {
+        return typeof value === "bigint" || (allowInstance && value instanceof BigInt);
+    }
+
+    public static isString(value: unknown, allowInstance: boolean = false): boolean {
+        return typeof value === "string" || (allowInstance && value instanceof String);
+    }
+
+    public static isSymbol(value: unknown, allowInstance: boolean = false): boolean {
+        return typeof value === "symbol" || (allowInstance && value instanceof Symbol);
+    }
+
+    public static isFunction(value: unknown): boolean {
+        return typeof value === "function";
+    }
+
+    public static isObject(value: unknown): boolean {
+        return typeof value === "object";
+    }
+
+    public static isArray(value: unknown): boolean {
+        return Array.isArray(value);
     }
 }
 
 /**
  * Represents a version number.
  */
-export class Version implements Equatable<Version> {
+export class MutableVersion implements Comparable<MutableVersion>, Equatable<MutableVersion> {
 
     /**
      * Creates a new instance of this class.
@@ -869,11 +899,22 @@ export class Version implements Equatable<Version> {
      * @param minor The minor component of the version number.
      * @param patch The patch component of the version number.
      */
-    public constructor(
-        public readonly major: number = 0,
-        public readonly minor: number = 0,
-        public readonly patch: number = 0) {
-        Object.freeze(this);
+    public constructor(public major: number = 0, public minor: number = 0, public patch: number = 0) {
+    }
+
+    /**
+     * Compares two objects that implement Comparable.
+     * @param other The other object to compare with this object.
+     * @returns Returns a numeric value indicating the relative order of the left object to the right object.
+     */
+    public compareTo(other: MutableVersion): number {
+        if (this.major > other.major) return 1;
+        if (this.major < other.major) return -1;
+        if (this.minor > other.minor) return 1;
+        if (this.minor < other.minor) return -1;
+        if (this.patch > other.patch) return 1;
+        if (this.patch < other.patch) return -1;
+        return 0;
     }
 
     /**
@@ -881,7 +922,7 @@ export class Version implements Equatable<Version> {
      * @param other The other object to compare with this object.
      * @returns Returns true if the objects are equal; otherwise, false.
      */
-    public equals(other: Version): boolean {
+    public equals(other: MutableVersion): boolean {
         return Equatable.equals(this, other);
     }
 
@@ -894,13 +935,103 @@ export class Version implements Equatable<Version> {
     }
 
     /**
-     * Parses a string into a Version instance.
-     * @param value The value to parse into a Version instance.
-     * @returns Returns a new Version instance parsed from the specified value.
+     * Parses a string into a MutableVersion instance.
+     * @param value The value to parse into a MutableVersion instance.
+     * @returns Returns a new MutableVersion instance parsed from the specified value.
      */
-    public static parse(value: string): Version {
+    public static parse(value: string): MutableVersion {
         const values: number[] = value.split(".", 3).map(n => Number(n));
-        return new Version(values[0], values[1], values[2]);
+        return new MutableVersion(values[0], values[1], values[2]);
+    }
+}
+
+/**
+ * Represents an immutable, or readonly version.
+ */
+export type Version = Readonly<MutableVersion>;
+
+/**
+ * Represents a unique identifier.
+ */
+export class UniqueIdentifier implements Comparable<UniqueIdentifier>, Equatable<UniqueIdentifier> {
+
+    /**
+     * An empty unique identifier.
+     * @returns Returns an empty unique identifier.
+     */
+    public static get EMPTY(): UniqueIdentifier {
+        return new UniqueIdentifier();
+    }
+
+    /**
+     * Creates a new instance of this class.
+     * @param value The value of the unique identifier.
+     */
+    private constructor(private readonly value: number[] = Array.from({ length: 16 }, () => 0)) {
+        Object.freeze(this);
+    }
+
+    /**
+     * Compares two objects that implement Comparable.
+     * @param other The other object to compare with this object.
+     * @returns Returns a numeric value indicating the relative order of the left object to the right object.
+     */
+    public compareTo(other: UniqueIdentifier): number {
+        function computeHash(values: number[]): number {
+            const prime: number = 16777619;
+            let hash: number = 2166136261;
+
+            values.forEach(value => {
+                hash ^= value;
+                hash *= prime;
+            });
+
+            return hash;
+        }
+
+        return Comparable.compare(this, other, uid => computeHash(uid.value));
+    }
+
+    /**
+     * Compares this object with the other object.
+     * @param other The other object to compare with this object.
+     * @returns Returns true if the objects are equal; otherwise, false.
+     */
+    public equals(other: UniqueIdentifier): boolean {
+        return Equatable.equals(this, other);
+    }
+
+    /**
+     * Gets the value of this unique identifier as an array.
+     * @returns Returns the value of this unique identifier as an array.
+     */
+    public toArray(): number[] {
+        return this.value;
+    }
+
+    /**
+     * Returns a string representing this object.
+     * @returns Returns a string representing this object.
+     */
+    public toString(): string {
+        const positions: number[] = [4, 6, 8, 10];
+        const toHexByte: Func1<number, string> = (index: number) => ("0" + this.value[index].toString(16)).slice(-2);
+        return this.value.map((_, index) => `${positions.includes(index) ? "-" : ""}${toHexByte(index)}`).join("");
+    }
+
+    /**
+     * Generates a random version 4 unique identifier.
+     * @returns Returns a random unique identifier.
+     */
+    public static random(): UniqueIdentifier {
+        const value: number[] = Array.from({ length: 16 }, () => Math.floor(Math.random() * 255));
+
+        value[6] &= 0x0F;
+        value[6] |= 0x40;
+        value[8] &= 0x3F;
+        value[8] |= 0x80;
+
+        return new UniqueIdentifier(value);
     }
 }
 

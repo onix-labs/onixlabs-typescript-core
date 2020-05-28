@@ -123,15 +123,15 @@ export class Assert {
         }
     }
 
-    public static isLiteralOfType(actual: any, ctor: Constructor): void {
-        if (!Type.isLiteralOfType(actual, ctor)) {
-            throw new AssertionError(`Assert.isLiteralOfType failed. The value is not a literal of type '${ctor.name}'.`);
+    public static isPrimitiveOfType(actual: any, ctor: Constructor): void {
+        if (!Type.isPrimitiveOfType(actual, ctor)) {
+            throw new AssertionError(`Assert.isPrimitiveOfType failed. The value is not a literal of type '${ctor.name}'.`);
         }
     }
 
-    public static isNotLiteralOfType(actual: any, type: Constructor): void {
-        if (Type.isLiteralOfType(actual, type)) {
-            throw new AssertionError(`Assert.isNotLiteralOfType failed. The value is a literal of type '${type.name}'.`);
+    public static isNotPrimitiveOfType(actual: any, type: Constructor): void {
+        if (Type.isPrimitiveOfType(actual, type)) {
+            throw new AssertionError(`Assert.isNotPrimitiveOfType failed. The value is a literal of type '${type.name}'.`);
         }
     }
 

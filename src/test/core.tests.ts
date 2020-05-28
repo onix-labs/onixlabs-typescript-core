@@ -14,7 +14,7 @@ import {
     EnumSet,
     Prototype,
     Type,
-    Version,
+    MutableVersion,
     ObservableObject,
     Observable,
     PropertyChanged,
@@ -355,64 +355,299 @@ export class CoreTests {
         Assert.isEqual(expected, actual);
     }
 
-    @test({}, false)
-    @test(123, false)
-    @test(() => undefined, true)
-    @test(new Function(), true)
-    @display("Type.isCallable should produce the expected result.")
-    public type_isCallable(value: unknown, expected: boolean): void {
-        const actual: boolean = Type.isCallable(value);
-        Assert.isEqual(expected, actual);
-    }
-
-    @test(123, Number, true)
-    @test("1", Number, false)
-    @test(new Number(123), Number, false)
-    @display("Type.isLiteralOfType should produce the expected result.")
-    public type_isLiteralOfType(value: unknown, constructor: Constructor<unknown>, expected: boolean): void {
-        const actual: boolean = Type.isLiteralOfType(value, constructor);
-        Assert.isEqual(expected, actual);
-    }
-
-    @test(123, Number, false)
-    @test("1", Number, false)
-    @test(new Number(123), Number, true)
+    @test("abc", String, false)
+    @test(12345, Number, false)
+    @test(1234n, BigInt, false)
+    @test(false, Boolean, false)
+    @test(Symbol(), Symbol, false)
+    @test(new String(), String, true)
+    @test(new String(), Number, false)
+    @test(new String(), Object, true)
+    @test(new Number(), Number, true)
+    @test(new Number(), String, false)
+    @test(new Number(), Object, true)
+    @test(new Boolean(), Boolean, true)
+    @test(new Boolean(), Number, false)
+    @test(new Boolean(), Object, true)
+    @test(new Function(), Function, true)
+    @test(() => undefined, Function, true)
+    @test(new A(), A, true)
+    @test(new B(), B, true)
+    @test(new C(), C, true)
+    @test(new A(), Object, true)
+    @test(new B(), Object, true)
+    @test(new C(), Object, true)
     @display("Type.isInstanceOfType should produce the expected result.")
-    public type_isInstanceOfType(value: unknown, constructor: Constructor<unknown>, expected: boolean): void {
+    public type_isInstanceOfType(value: unknown, constructor: Constructor<any>, expected: boolean): void {
         const actual: boolean = Type.isInstanceOfType(value, constructor);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", String, true)
+    @test(12345, Number, true)
+    @test(1234n, BigInt, true)
+    @test(false, Boolean, true)
+    @test(Symbol(), Symbol, true)
+    @test(new String(), String, false)
+    @test(new String(), Number, false)
+    @test(new String(), Object, false)
+    @test(new Number(), Number, false)
+    @test(new Number(), String, false)
+    @test(new Number(), Object, false)
+    @test(new Boolean(), Boolean, false)
+    @test(new Boolean(), Number, false)
+    @test(new Boolean(), Object, false)
+    @test(new Function(), Function, false)
+    @test(() => undefined, Function, false)
+    @test(new A(), A, false)
+    @test(new B(), B, false)
+    @test(new C(), C, false)
+    @test(new A(), Object, false)
+    @test(new B(), Object, false)
+    @test(new C(), Object, false)
+    @display("Type.isPrimitiveOfType should produce the expected result.")
+    public type_isPrimitiveOfType(value: unknown, constructor: Constructor<any>, expected: boolean): void {
+        const actual: boolean = Type.isPrimitiveOfType(value, constructor);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", true)
+    @test(12345, true)
+    @test(1234n, true)
+    @test(false, true)
+    @test(Symbol(), true)
+    @test(undefined, true)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @display("Type.isPrimitive should produce the expected result.")
+    public type_isPrimitive(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isPrimitive(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, true)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), true)
+    @test(new Function(), false)
+    @display("Type.isBoolean should produce the expected result.")
+    public type_isBoolean(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isBoolean(value, true);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, true)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), true)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @display("Type.isNumber should produce the expected result.")
+    public type_isNumber(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isNumber(value, true);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, true)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @display("Type.isBigInt should produce the expected result.")
+    public type_isBigInt(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isBigInt(value, true);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", true)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), true)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @display("Type.isString should produce the expected result.")
+    public type_isString(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isString(value, true);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), true)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, false)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @display("Type.isSymbol should produce the expected result.")
+    public type_isSymbol(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isSymbol(value, true);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], false)
+    @test(() => undefined, true)
+    @test(new Array(), false)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), true)
+    @test(Object.keys, true)
+    @display("Type.isFunction should produce the expected result.")
+    public type_isFunction(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isFunction(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, true)
+    @test([], true)
+    @test(() => undefined, false)
+    @test(new Array(), true)
+    @test(new Object(), true)
+    @test(new String(), true)
+    @test(new Number(), true)
+    @test(new Boolean(), true)
+    @test(new Function(), false)
+    @test(Object.keys, false)
+    @display("Type.isObject should produce the expected result.")
+    public type_isObject(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isObject(value);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test("abc", false)
+    @test(12345, false)
+    @test(1234n, false)
+    @test(false, false)
+    @test(Symbol(), false)
+    @test(undefined, false)
+    @test({}, false)
+    @test([], true)
+    @test(() => undefined, false)
+    @test(new Array(), true)
+    @test(new Object(), false)
+    @test(new String(), false)
+    @test(new Number(), false)
+    @test(new Boolean(), false)
+    @test(new Function(), false)
+    @test(Object.keys, false)
+    @display("Type.isArray should produce the expected result.")
+    public type_isArray(value: unknown, expected: boolean): void {
+        const actual: boolean = Type.isArray(value);
         Assert.isEqual(expected, actual);
     }
 
     @test()
     @display("Version.constructor should construct a version.")
     public version_constructor(): void {
-        const version: Version = new Version(1, 2, 3);
+        const version: MutableVersion = new MutableVersion(1, 2, 3);
         const expected: string = "1.2.3";
         const actual: string = version.toString();
         Assert.isEqual(expected, actual);
     }
 
-    @test(new Version(1, 2, 3), new Version(1, 2, 3), true)
-    @test(new Version(1, 2, 3), new Version(2, 3, 4), false)
+    @test(new MutableVersion(0, 0, 2), new MutableVersion(0, 0, 1), 1)
+    @test(new MutableVersion(0, 0, 1), new MutableVersion(0, 0, 1), 0)
+    @test(new MutableVersion(0, 0, 1), new MutableVersion(0, 0, 2), -1)
+    @test(new MutableVersion(0, 2, 0), new MutableVersion(0, 1, 0), 1)
+    @test(new MutableVersion(0, 1, 0), new MutableVersion(0, 1, 0), 0)
+    @test(new MutableVersion(0, 1, 0), new MutableVersion(0, 2, 0), -1)
+    @test(new MutableVersion(2, 0, 0), new MutableVersion(1, 0, 0), 1)
+    @test(new MutableVersion(1, 0, 0), new MutableVersion(1, 0, 0), 0)
+    @test(new MutableVersion(1, 0, 0), new MutableVersion(2, 0, 0), -1)
+    @display("Version.compareTo should produce the expected result.")
+    public version_compareTo(a: MutableVersion, b: MutableVersion, expected: number): void {
+        const actual: number = a.compareTo(b);
+        Assert.isEqual(expected, actual);
+    }
+
+    @test(new MutableVersion(1, 2, 3), new MutableVersion(1, 2, 3), true)
+    @test(new MutableVersion(1, 2, 3), new MutableVersion(2, 3, 4), false)
     @display("Version.equals should produce the expected result.")
-    public version_equals(a: Version, b: Version, expected: boolean): void {
+    public version_equals(a: MutableVersion, b: MutableVersion, expected: boolean): void {
         const actual: boolean = a.equals(b);
         Assert.isEqual(expected, actual);
     }
 
-    @test(new Version(1, 0, 0), "1.0.0")
-    @test(new Version(1, 2, 3), "1.2.3")
+    @test(new MutableVersion(1, 0, 0), "1.0.0")
+    @test(new MutableVersion(1, 2, 3), "1.2.3")
     @display("Version.toString should produce the expected result.")
-    public version_toString(version: Version, expected: string): void {
+    public version_toString(version: MutableVersion, expected: string): void {
         const actual: string = version.toString();
         Assert.isEqual(expected, actual);
     }
 
-    @test("1.0.0", new Version(1, 0, 0))
-    @test("1.2.3", new Version(1, 2, 3))
+    @test("1.0.0", new MutableVersion(1, 0, 0))
+    @test("1.2.3", new MutableVersion(1, 2, 3))
     @display("Version.parse should produce the expected result.")
-    public version_parse(version: string, expected: Version): void {
-        const actual: Version = Version.parse(version);
+    public version_parse(version: string, expected: MutableVersion): void {
+        const actual: MutableVersion = MutableVersion.parse(version);
         Assert.isEqual(expected, actual);
     }
 
