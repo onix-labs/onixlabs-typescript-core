@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "gulp clean build",
-    "test": "gulp clean build && clear && node dist/test/_testrun.js"
+    "test": "gulp clean build && clear && node dist/test/main.js"
   },
   "repository": {
     "type": "git",

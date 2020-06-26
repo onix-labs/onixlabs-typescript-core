@@ -8,6 +8,9 @@
         "ban-types": [
             false
         ],
+        "eofline": [
+            true
+        ],
         "member-access": [
             true,
             "check-accessor",
