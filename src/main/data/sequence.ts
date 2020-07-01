@@ -243,6 +243,10 @@ export abstract class Sequence<T> implements Iterable<T>, Equatable<Sequence<T>>
         return Sequence.from([...items, ...this]);
     }
 
+    public reduce(reducer: Func2<T, T, T>): T {
+        return this[ITERABLE].reduce(reducer);
+    }
+
     public reverse(): Sequence<T> {
         return Sequence.from(this[ITERABLE].slice().reverse());
     }
